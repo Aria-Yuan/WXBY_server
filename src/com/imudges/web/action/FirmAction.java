@@ -3,7 +3,7 @@ package com.imudges.web.action;
 import java.util.List;
 import java.util.Map;
 
-public class FirmAction extends BaseAction{
+public class FirmAction extends SearchBaseAction{
     /**
      * 用户请求参数
      * */

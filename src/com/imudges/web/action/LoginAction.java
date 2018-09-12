@@ -5,7 +5,7 @@ import java.util.Map;
 /**
  * Created by HUPENG on 2017/4/30.
  */
-public class LoginAction extends BaseAction {
+public class LoginAction extends SearchBaseAction {
     /**
      * 用户请求参数
      * */
