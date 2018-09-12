@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Created by HUPENG on 2017/4/30.
@@ -39,13 +40,30 @@ public class BaseAction extends ActionSupport{
     /**
          * 返回搜寻的结果
          * */
-        protected List<Map<String, Object>> getResult(String type, String condition){
+        protected List<Map<String, Object>> getResult(String type, String keyWord, String searchType){
             List<Map<String, Object>> result = new ArrayList<>();
             switch (type){
                 case "firm":{
                     MongoDBUtil mongoDb = new MongoDBUtil("wxby");
                     MongoCollection<Document> collection = mongoDb.getCollection("law_firm");
-                    MongoCursor<Document> cursor = collection.find().limit(3).iterator();
+                    MongoCursor<Document> cursor;
+                    if(searchType.equals("0")){
+                        List<Document> condition = new ArrayList<>();
+                        //设置正则表达
+                        Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
+                        condition.add(new Document("firm_name" , regular));
+                        condition.add(new Document("firm_addr" , regular));
+                        condition.add(new Document("firm_type" , regular));
+                        condition.add(new Document("firm_dscrpt" , regular));
+                        condition.add(new Document("firm_intro" , regular));
+                        condition.add(new Document("firm_major" , regular));
+                        cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
+                    }else if(searchType.equals("1")){
+                        cursor = collection.find(new Document("firm_addr",keyWord)).limit(15).iterator();
+                    }else{
+                        cursor = collection.find().limit(10).iterator();
+                    }
+
                     while (cursor.hasNext()) {
                         Map<String, Object> map = new HashMap<String, Object>();
                         map.putAll(cursor.next());

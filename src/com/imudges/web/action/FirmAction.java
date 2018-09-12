@@ -8,6 +8,7 @@ public class FirmAction extends BaseAction{
      * 用户请求参数
      * */
     private String condition;
+    private String type;
 
     /**
      * 返回结果
@@ -20,6 +21,14 @@ public class FirmAction extends BaseAction{
 
     public void setCondition(String source_url) {
         this.condition = source_url;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public List<Map<String, Object>> getResult() {
@@ -37,7 +46,7 @@ public class FirmAction extends BaseAction{
 //        }else {
 //            result = getFailResult(-1,"用户名或者密码错误");
 //        }
-        result = getResult("firm",condition);
+        result = getResult("firm",condition,type);
         return SUCCESS;
     }
 }
