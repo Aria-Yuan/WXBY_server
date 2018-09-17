@@ -25,5 +25,17 @@
                 <param name="root">result</param>
             </result>
         </action>
+
+        <action name="updateCounseling" class="com.imudges.web.action.CounselingUpdateAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
+
+        <action name="searchLaw" class="com.imudges.web.action.LawAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
     </package>
 </struts>

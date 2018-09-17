@@ -5,6 +5,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.opensymphony.xwork2.ActionSupport;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,7 +19,7 @@ public class UpdateBaseAction extends ActionSupport {
      * */
     protected Map<String,Object> getSuccessResult(Object data){
         Map<String,Object>result = new HashMap<>();
-        result.put("code",0);
+        result.put("code",1);
         result.put("msg","ok");
         result.put("data",data);
         return result;
@@ -28,7 +29,7 @@ public class UpdateBaseAction extends ActionSupport {
      * */
     protected Map<String,Object>getFailResult(int code,String msg){
         Map<String,Object>result = new HashMap<>();
-        result.put("code",code);
+        result.put("code",code+"");
         result.put("msg",msg);
         result.put("data",null);
         return result;
@@ -45,9 +46,11 @@ public class UpdateBaseAction extends ActionSupport {
                 MongoCollection<Document> collection = mongoDb.getCollection("legal_counseling");
                 MongoCursor<Document> cursor;
                 if(searchType.equals("0")){//更新
-                    Document oldOne = collection.find(new Document().append("_id",target.getString("_id"))).first();
-                    collection.updateOne(oldOne,target);
-                    Document newOne = collection.find(new Document().append("_id",target.getString("_id"))).first();
+                    Document oldOne = collection.find(new Document().append("_id",target.getObjectId("_id"))).first();
+                    System.out.println("我是中文" + oldOne);
+                    System.out.println("我是法文" + target);
+                    collection.updateOne(oldOne,new Document("$set",target));
+                    Document newOne = collection.find(new Document().append("_id",target.getObjectId("_id"))).first();
                     result.putAll(newOne);
                 }else{
                     result.putAll(target);
