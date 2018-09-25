@@ -4,12 +4,14 @@ import com.circle.web.database.database.MongoDBUtil;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.opensymphony.xwork2.ActionSupport;
+import jdk.nashorn.internal.scripts.JO;
+import net.sf.json.JSONObject;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -42,9 +44,9 @@ public class SearchBaseAction extends ActionSupport{
          * */
         protected List<Map<String, Object>> getResult(String type, String keyWord, String searchType){
             List<Map<String, Object>> result = new ArrayList<>();
+            MongoDBUtil mongoDb = new MongoDBUtil("wxby");
             switch (type){
                 case "firm":{
-                    MongoDBUtil mongoDb = new MongoDBUtil("wxby");
                     MongoCollection<Document> collection = mongoDb.getCollection("law_firm");
                     MongoCursor<Document> cursor;
                     if(searchType.equals("0")){//关键字搜寻
@@ -66,36 +68,362 @@ public class SearchBaseAction extends ActionSupport{
                     } else{
                         cursor = collection.find().limit(10).iterator();
                     }
-
                     while (cursor.hasNext()) {
                         Map<String, Object> map = new HashMap<String, Object>();
                         map.putAll(cursor.next());
                         result.add(map);
                     }
+                    cursor.close();
                 }break;
                 case "counseling":{
-                    MongoDBUtil mongoDb = new MongoDBUtil("wxby");
                     MongoCollection<Document> collection = mongoDb.getCollection("legal_counseling");
                     MongoCursor<Document> cursor;
-                    if(searchType.equals("0")){//关键字搜寻
+                    if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
                         List<Document> condition = new ArrayList<>();
                         //设置正则表达
                         Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
                         condition.add(new Document("content" , regular));
                         cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
-                    }else{
+                    }else if(searchType.equals("1")){//新增
+                        Document counseling = Document.parse(keyWord);
+                        counseling.append("questioner",new ObjectId(counseling.getString("questioner")));
+                        counseling.append("lawyer",new ObjectId(counseling.getString("lawyer")));
+                        System.out.println(counseling);
+                        collection.insertOne(counseling);
+                        cursor = collection.find(counseling).limit(1).iterator();
+                    }else if(searchType.equals("2")){
+                        cursor = collection.find(new Document("questioner", new ObjectId(keyWord))).limit(15).iterator();
+                    }else if(searchType.equals("3")){
+
+                        cursor = collection.find(new Document("questioner", new ObjectId())).limit(15).iterator();
+                    }
+                    else{
                         cursor = collection.find().limit(15).iterator();
                     }
 
+                    MongoCollection<Document> collection_l = mongoDb.getCollection("lawyer");
                     while (cursor.hasNext()) {
                         Map<String, Object> map = new HashMap<String, Object>();
-                        map.putAll(cursor.next());
+                        Document a = cursor.next();
+                        a.put("_id", a.getObjectId("_id").toString());
+                        a.put("questioner", a.getObjectId("questioner").toString());
+                        MongoCursor<Document> lawyerCursor = collection_l.find(new Document("_id",a.getObjectId("lawyer"))).iterator();
+                        Document lawyer = lawyerCursor.next();
+                        lawyer.put("_id",lawyer.getObjectId("_id").toString());
+                        lawyer.put("reg_id",lawyer.getObjectId("reg_id").toString());
+                        a.put("lawyer", lawyer);
+                        map.putAll(a);
                         result.add(map);
                     }
+                    cursor.close();
+                }break;
+                case "law":{
+                    MongoCollection<Document> collection = mongoDb.getCollection("law");
+                    MongoCursor<Document> cursor;
+                    if(searchType.equals("0") && !keyWord.isEmpty()) {//关键字搜寻
+                        JSONObject con_json = JSONObject.fromObject(keyWord);
+                        Document condition = new Document();
+                        List<Document> and = new ArrayList<>();
+                        try{
+                            Pattern regularkey = Pattern.compile("(?i)" + con_json.getString("keyword") + ".*$", Pattern.MULTILINE);
+                            and.add(new Document("content",regularkey));
+                        }catch (Exception e){
+                            System.out.println("isNull");
+                        }
+                        try{
+                            Pattern regularand = Pattern.compile("(?i)" + con_json.getString("and") + ".*$", Pattern.MULTILINE);
+                            and.add(new Document("content",regularand));
+                        }catch (Exception e){
+                            System.out.println("isNull");
+                        }
+                        try{
+                            Pattern regularnot = Pattern.compile("(?i)" + con_json.getString("not") + ".*$", Pattern.MULTILINE);
+                            and.add(new Document("$not",new Document("content",regularnot)));
+                        }catch (Exception e){
+                            System.out.println("isNull");
+                        }
+                        List<Document> or = new ArrayList<>();
+                        or.add(new Document("$and",and));
+                        try{
+                            Pattern regularor = Pattern.compile("(?i)" + con_json.getString("or") + ".*$", Pattern.MULTILINE);
+                            or.add(new Document("content",regularor));
+                        }catch (Exception e){
+                            System.out.println("isNull");
+                        }
+                        condition.append("$or",or);
+                        cursor = collection.find(condition).limit(15).iterator();
+                    }else{
+                        cursor = collection.find().limit(15).iterator();
+                    }
+                    while (cursor.hasNext()) {
+                        Map<String, Object> map = new HashMap<String, Object>();
+                        Document a = cursor.next();
+                        a.put("_id", a.getObjectId("_id").toString());
+                        map.putAll(a);
+                        result.add(map);
+                    }
+                    cursor.close();
+                }break;
+                case "lawyer":{
+                    MongoCollection<Document> collection = mongoDb.getCollection("lawyer");
+                    MongoCursor<Document> cursor;
+                    if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
+                        List<Document> condition = new ArrayList<>();
+                        //设置正则表达
+                        Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
+                        condition.add(new Document("name" , regular));
+                        cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
+                    }else if(searchType.equals("1")) {//PK搜寻
+                        cursor = collection.find(new Document("_id",new ObjectId(keyWord))).limit(15).iterator();
+                    }
+                    else{
+                        cursor = collection.find().limit(15).iterator();
+                    }
+                    while (cursor.hasNext()) {
+                        Map<String, Object> map = new HashMap<String, Object>();
+                        Document a = cursor.next();
+                        a.put("_id", a.getObjectId("_id").toString());
+                        a.put("reg_id", a.getObjectId("reg_id").toString());
+                        map.putAll(a);
+                        result.add(map);
+                    }
+                    cursor.close();
+                }
+                case "judgement":{
+                    MongoCollection<Document> collection = mongoDb.getCollection("judgement");
+                    MongoCursor<Document> cursor;
+                    if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
+                        List<Document> condition = new ArrayList<>();
+                        //设置正则表达
+                        Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
+                        condition.add(new Document("name" , regular));
+                        cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
+                    }
+                    else{
+                        cursor = collection.find().limit(15).iterator();
+                    }
+                    while (cursor.hasNext()) {
+                        Map<String, Object> map = new HashMap<String, Object>();
+                        Document a = cursor.next();
+                        a.put("_id", a.getObjectId("_id").toString());
+                        map.putAll(a);
+                        result.add(map);
+                    }
+                    cursor.close();
                 }
             }
-
+            mongoDb.close();
             return result;
     }
+
+    protected Map<String, Object> getCaseConsultResult(String id){
+        Map<String, Object> result = new HashMap<>();
+//        System.out.println(id);
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        MongoCollection<Document> collection = mongoDb.getCollection("case_consult");
+        MongoCollection<Document> jCollection = mongoDb.getCollection("judgement");
+        MongoCollection<Document> lCollection = mongoDb.getCollection("law");
+        MongoCursor<Document> cursor = collection.find(new Document("case_id", id)).iterator();
+        Document data = cursor.next();
+        if (data.getInteger("state") == 1){
+            System.out.println(data.get("case_id"));
+            result.put("case_id", id);
+            result.put("content", data.get("content"));
+            result.put("result", data.get("result"));
+
+            ArrayList<Document> similars = new ArrayList<>();
+            for (ObjectId ids: data.get("similar", new ArrayList<ObjectId>())){
+                MongoCursor<Document> jcursor = jCollection.find(new Document("_id", ids)).iterator();
+                //            System.out.println(jcursor.next());
+                //            similars.add(jcursor.next());
+                Document temp = jcursor.next();
+                Document tempData = new Document();
+                tempData.put("j_id", temp.get("j_id"));
+                tempData.put("j_date", temp.get("j_date"));
+                tempData.put("j_reason", temp.get("j_reason"));
+                tempData.put("_id", temp.get("_id").toString());
+                similars.add(tempData);
+                System.out.println(tempData);
+            }
+            result.put("similar", similars);
+            //        System.out.println();
+            //        System.out.println();
+            //        System.out.println("similar: " + similars);
+            //        System.out.println();
+            //        System.out.println();
+            //        System.out.println();
+
+            ArrayList<Document> refers = new ArrayList<>();
+            for (ObjectId ids: data.get("refer", new ArrayList<ObjectId>())){
+                MongoCursor<Document> lcursor = lCollection.find(new Document("_id", ids)).iterator();
+                Document temp = lcursor.next();
+                Document tempData = new Document();
+                tempData.put("_id", temp.get("_id").toString());
+                tempData.put("name", temp.get("name").toString());
+                tempData.put("start", temp.get("start").toString());
+                tempData.put("abandon", temp.get("abandon").toString());
+                if (!temp.get("abandon").toString().equals("Not abandon yet")){
+                    tempData.put("end", temp.get("end").toString());
+                }
+                tempData.put("article", temp.get("article").toString());
+                tempData.put("content", temp.get("content").toString());
+                refers.add(tempData);
+            }
+            result.put("refer", refers);
+            //        System.out.println();
+            //        System.out.println();
+            //        System.out.println();
+            System.out.println(refers);
+            //        System.out.println();
+            //        System.out.println();
+            //        System.out.println();
+
+            result.put("state", data.get("state"));
+
+            //        mongoDb.close();
+
+            //        System.out.println(result);
+        }else{
+            result.put("state", data.get("state"));
+            System.out.println(data.get("state"));
+        }
+        mongoDb.close();
+        return result;
+    }
+
+    protected Map<String, Object> getJudgementConsult(String id){
+
+        Map<String, Object> result = new HashMap<>();
+
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        MongoCollection<Document> collection = mongoDb.getCollection("judgement");
+
+        MongoCursor<Document> cursor = collection.find(new Document("id", id)).iterator();
+
+        int state = 0;
+        //1 成功 0 失败 -1 没资料
+        if (cursor.hasNext()) {
+            state = 1;
+            result.put("state", state);
+            Document data = cursor.next();
+            result.put("data", data);
+            System.out.println(data);
+        }else {
+            state = -1;
+            result.put("state", state);
+        }
+
+        mongoDb.close();
+
+        return result;
+
+    }
+
+    protected Map<String, Object> loginAndRegister(String tp, String username, String password){
+
+        int type = Integer.valueOf(tp);
+        Map<String, Object> result = new HashMap<>();
+        int code = 0;
+        String message = "", dbFind = "", dbInsert = "";
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        MongoCollection<Document> collection = mongoDb.getCollection("register");
+        MongoCursor<Document> cursor;
+
+//        System.out.println(type);
+
+        if (username.equals("")) {
+
+            code = 0;
+            message = "賬號不可以為空喔！";
+
+        } else{
+
+            switch (type){
+                //1 name登录 2 phone登录 3 id登录 -1 phone注册 -2 id注册
+                //return 0 无账号 1 成功 -1 密码错误 -2 账号重复
+
+                case 1:
+                    if (type == 1){
+                        dbFind = "name";
+                    }
+                case 2:
+                    if (type == 2){
+                        dbFind = "phone";
+                    }
+                case 3:
+                    if (type == 3){
+                        dbFind = "reg_id";
+                    }
+
+                    String rightPassword;
+                    cursor = collection.find(new Document().append(dbFind, username)).iterator();
+
+                    if (cursor.hasNext()) {
+
+                        rightPassword = cursor.next().getString("password");
+
+                        if (password.equals(rightPassword)) {
+                            code = 1;
+                            message = "登錄成功~";
+                        }else{
+                            code = -1;
+                            message = "抱歉，密碼有錯誤喔~";
+                        }
+
+                    }else{
+
+                        code = 0;
+                        message = "沒有這個賬號喔~";
+
+                    }
+
+                    System.out.println("type: " + type + "   username:" + username + "   password:" + password);
+
+                    break;
+
+                case -1:
+                    if (type == -1) {
+                        dbInsert = "phone";
+                        message = "該手機已經被註冊，請換一個其他的手機號或是點擊忘記密碼試試！";
+                    }
+
+                case -2:
+                    if (type== -2) {
+                        dbInsert = "reg_id";
+                        message = "該帳號已經被註冊，請換一個其他的手機號或是點擊忘記密碼試試！";
+                    }
+
+                    cursor = collection.find(new Document().append("phone", username)).iterator();
+
+                    if (cursor.hasNext()){
+
+                        code = -2;
+
+                    }else{
+
+                        Document docu = new Document();
+                        docu.put(dbInsert, username);
+                        docu.put("password", password);
+                        docu.put("name", "用戶" + (Math.random()*9+1)*100000);
+                        collection.insertOne(docu);
+
+                        code = 1;
+                        message = "註冊成功！";
+
+                    }
+
+                    break;
+            }
+        }
+
+        result.put("resultCode", code);
+        result.put("resultMessage", message);
+
+        System.out.println("resultCode:" + code + "   resultMessage:" + message);
+        mongoDb.close();
+        return result;
+
+    }
+
 
 }

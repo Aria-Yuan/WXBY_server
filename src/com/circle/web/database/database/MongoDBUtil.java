@@ -37,5 +37,13 @@ public class MongoDBUtil {
         return db.getCollection(colName);
     }
 
+    //关闭连接
+    public void close(){
+        if(mongoClient != null){
+            mongoClient.close();
+            mongoClient = null;
+        }
+    }
+
 
 }
