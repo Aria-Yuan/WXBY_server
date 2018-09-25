@@ -1,16 +1,9 @@
 package com.imudges.web.action;
 
-
-import com.mongodb.util.JSON;
-import net.sf.json.JSONObject;
-import org.bson.Document;
-import org.bson.types.ObjectId;
-
 import java.util.List;
 import java.util.Map;
 
-public class CounselingUpdateAction extends UpdateBaseAction {
-
+public class JudgementAction  extends SearchBaseAction{
     /**
      * 用户请求参数
      * */
@@ -20,7 +13,7 @@ public class CounselingUpdateAction extends UpdateBaseAction {
     /**
      * 返回结果
      * */
-    private Map<String, Object> result;
+    private List<Map<String, Object>> result;
 
     public String getCondition() {
         return condition;
@@ -38,11 +31,11 @@ public class CounselingUpdateAction extends UpdateBaseAction {
         this.type = type;
     }
 
-    public Map<String, Object> getResult() {
+    public List<Map<String, Object>> getResult() {
         return result;
     }
 
-    public void setResult(Map<String, Object> result) {
+    public void setResult(List<Map<String, Object>> result) {
         this.result = result;
     }
 
@@ -53,8 +46,7 @@ public class CounselingUpdateAction extends UpdateBaseAction {
 //        }else {
 //            result = getFailResult(-1,"用户名或者密码错误");
 //        }
-        System.out.println(condition);
-        result = getResult("counseling",condition, type);
+        result = getResult("judgement",condition,type);
         return SUCCESS;
     }
 }

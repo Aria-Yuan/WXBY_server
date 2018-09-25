@@ -37,5 +37,41 @@
                 <param name="root">result</param>
             </result>
         </action>
+
+        <action name="searchJudgement" class="com.imudges.web.action.JudgementAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
+
+        <action name="searchLawyer" class="com.imudges.web.action.LawyerAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
+
+        <!--<action name="loginAndRegister" class="com.imudges.web.action.RegisterAction">-->
+            <!--<result name="success" type="json">-->
+                <!--<param name="root">result</param>-->
+            <!--</result>-->
+        <!--</action>-->
+
+        <!--<action name="caseConsult" class="com.imudges.web.action.CaseConsultAction">-->
+            <!--<result name="success" type="json">-->
+                <!--<param name="root">result</param>-->
+            <!--</result>-->
+        <!--</action>-->
+
+        <action name="caseConsultResult" class="com.imudges.web.action.CaseConsultResultAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
+
+        <action name="judgementConsult" class="com.imudges.web.action.JudgementConsultAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
     </package>
 </struts>
