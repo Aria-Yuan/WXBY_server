@@ -431,5 +431,56 @@ public class SearchBaseAction extends ActionSupport{
 
     }
 
+    protected Map<String, Object> getQuickConsultResult(String id){
+
+        System.out.println(id);
+
+        Map<String, Object> result = new HashMap<>();
+
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        MongoCollection<Document> collection = mongoDb.getCollection("quick_response");
+        MongoCursor<Document> cursor = collection.find(new Document("_id", new ObjectId(id))).iterator();
+
+        if (cursor.hasNext()){
+            result.put("state", 1);
+            Document data = cursor.next();
+            Document trueData = data;
+            trueData.put("_id", data.get("_id").toString());
+            trueData.put("author", data.get("author").toString());
+//            System.out.println(data.get("lawyer_reply"));
+            for (Document reply: data.get("lawyer_reply", new ArrayList<Document>())){
+
+                reply.put("author", reply.get("author").toString());
+                reply.put("parent", reply.get("parent").toString());
+                reply.put("reply_id", reply.get("reply_id").toString());
+
+                int count = 0;
+                System.out.println(reply.get("replies"));
+                if(!reply.get("replies").equals(new ArrayList<>())) {
+                    List<String> tp = new ArrayList<>();
+                    for (ObjectId oros : reply.get("replies", new ArrayList<ObjectId>())) {
+
+                        tp.add(oros.toString());
+                        count++;
+
+                    }
+                    reply.put("replies", tp);
+                }
+
+            }
+            result.put("data", trueData);
+        }else{
+            result.put("state", 0);
+        }
+
+        System.out.println(result);
+
+        mongoDb.close();
+
+        return result;
+
+    }
+
+
 
 }
