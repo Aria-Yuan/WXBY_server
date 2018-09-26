@@ -39,11 +39,11 @@ public class UpdateBaseAction extends ActionSupport {
     /**
      * 返回搜寻的结果
      * */
-    protected Map<String, Object> getResult(String type, String condition, String searchType){
-        Map<String, Object> result = new HashMap<>();
+    protected List<Map<String, Object>> getResult(String type, String condition, String searchType){
+        List<Map<String, Object>> result = new ArrayList<>();
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
         switch (type){
             case "counseling":{
-                MongoDBUtil mongoDb = new MongoDBUtil("wxby");
                 MongoCollection<Document> collection = mongoDb.getCollection("legal_counseling");
                 Document target = new Document();
                 if(searchType.equals("0")){//更新浏览量
@@ -54,28 +54,38 @@ public class UpdateBaseAction extends ActionSupport {
                     System.out.println("我是法文" + target);
                     collection.updateOne(oldOne,new Document("$set",target));
                     Document newOne = collection.find(new Document().append("_id",target.getObjectId("_id"))).first();
-                    result.putAll(newOne);
+                    newOne.append("_id",newOne.getObjectId("_id").toString());
+                    Map<String, Object> a = new HashMap<>();
+                    a.putAll(newOne);
+                    result.add(a);
                 }else if(searchType.equals("1")){//更新提问
                     MongoCollection<Document> collection_l = mongoDb.getCollection("lawyer");
+                    MongoCollection<Document> collection_r = mongoDb.getCollection("register");
                     target = Document.parse(condition);
                     target.append("_id",new ObjectId(target.getString("_id")));
                     Document oldOne = collection.find(new Document().append("_id",target.getObjectId("_id"))).first();
                     collection.updateOne(oldOne,new Document("$set",target));
                     System.out.println(target);
                     Document newOne = collection.find(new Document().append("_id",target.getObjectId("_id"))).first();
-                    newOne.append("questioner",newOne.getObjectId("questioner").toString());
+                    newOne.append("questioner",collection_r.find(new Document("_id",newOne.getObjectId("questioner"))).iterator().next().getString("name"));
                     MongoCursor<Document> lawyerCursor = collection_l.find(new Document("_id",newOne.getObjectId("lawyer"))).iterator();
                     Document lawyer = lawyerCursor.next();
                     lawyer.put("_id",lawyer.getObjectId("_id").toString());
                     lawyer.put("reg_id",lawyer.getObjectId("reg_id").toString());
                     newOne.put("lawyer", lawyer);
-                    result.putAll(newOne);
+                    newOne.append("_id",newOne.getObjectId("_id").toString());
+                    Map<String, Object> a = new HashMap<>();
+                    a.putAll(newOne);
+                    result.add(a);
                     }
                 else{
-                    result.putAll(target);
+                    Map<String, Object> a = new HashMap<>();
+                    a.put("msg","请求错误");
+                    result.add(a);
                 }
             }
         }
+        mongoDb.close();
         return result;
     }
 

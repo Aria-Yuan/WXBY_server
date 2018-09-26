@@ -20,7 +20,7 @@ public class CounselingUpdateAction extends UpdateBaseAction {
     /**
      * 返回结果
      * */
-    private Map<String, Object> result;
+    private List<Map<String, Object>> result;
 
     public String getCondition() {
         return condition;
@@ -38,11 +38,11 @@ public class CounselingUpdateAction extends UpdateBaseAction {
         this.type = type;
     }
 
-    public Map<String, Object> getResult() {
+    public List<Map<String, Object>> getResult() {
         return result;
     }
 
-    public void setResult(Map<String, Object> result) {
+    public void setResult(List<Map<String, Object>> result) {
         this.result = result;
     }
 

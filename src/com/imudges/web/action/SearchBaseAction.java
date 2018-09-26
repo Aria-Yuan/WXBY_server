@@ -77,6 +77,8 @@ public class SearchBaseAction extends ActionSupport{
                 }break;
                 case "counseling":{
                     MongoCollection<Document> collection = mongoDb.getCollection("legal_counseling");
+                    MongoCollection<Document> collection_l = mongoDb.getCollection("lawyer");
+                    MongoCollection<Document> collection_q = mongoDb.getCollection("register");
                     MongoCursor<Document> cursor;
                     if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
                         List<Document> condition = new ArrayList<>();
@@ -94,19 +96,18 @@ public class SearchBaseAction extends ActionSupport{
                     }else if(searchType.equals("2")){
                         cursor = collection.find(new Document("questioner", new ObjectId(keyWord))).limit(15).iterator();
                     }else if(searchType.equals("3")){
-
-                        cursor = collection.find(new Document("questioner", new ObjectId())).limit(15).iterator();
+                        MongoCursor<Document> lawyerCursor1 = collection_l.find(new Document("reg_id",new ObjectId(keyWord))).iterator();
+                        cursor = collection.find(new Document("lawyer", lawyerCursor1.next().getObjectId("_id"))).limit(15).iterator();
                     }
                     else{
                         cursor = collection.find().limit(15).iterator();
                     }
-
-                    MongoCollection<Document> collection_l = mongoDb.getCollection("lawyer");
                     while (cursor.hasNext()) {
                         Map<String, Object> map = new HashMap<String, Object>();
                         Document a = cursor.next();
                         a.put("_id", a.getObjectId("_id").toString());
-                        a.put("questioner", a.getObjectId("questioner").toString());
+                        MongoCursor<Document> questionerCursor = collection_q.find(new Document("_id",a.getObjectId("questioner"))).iterator();
+                        a.put("questioner", questionerCursor.next().getString("name"));
                         MongoCursor<Document> lawyerCursor = collection_l.find(new Document("_id",a.getObjectId("lawyer"))).iterator();
                         Document lawyer = lawyerCursor.next();
                         lawyer.put("_id",lawyer.getObjectId("_id").toString());
@@ -327,7 +328,7 @@ public class SearchBaseAction extends ActionSupport{
         String message = "", dbFind = "", dbInsert = "";
         MongoDBUtil mongoDb = new MongoDBUtil("wxby");
         MongoCollection<Document> collection = mongoDb.getCollection("register");
-        MongoCursor<Document> cursor;
+        MongoCursor<Document> cursorr;
 
 //        System.out.println(type);
 
@@ -356,15 +357,20 @@ public class SearchBaseAction extends ActionSupport{
                     }
 
                     String rightPassword;
-                    cursor = collection.find(new Document().append(dbFind, username)).iterator();
 
-                    if (cursor.hasNext()) {
+                    cursorr = collection.find(new Document().append(dbFind, username)).iterator();
 
-                        rightPassword = cursor.next().getString("password");
+
+                    if (cursorr.hasNext()) {
+                        Document cursor = cursorr.next();
+                        rightPassword = cursor.getString("password");
 
                         if (password.equals(rightPassword)) {
                             code = 1;
                             message = "登錄成功~";
+                            result.put("_id", cursor.getObjectId("_id").toString());
+                            result.put("role", cursor.get("role")+"");
+                            result.put("name", cursor.getString("name"));
                         }else{
                             code = -1;
                             message = "抱歉，密碼有錯誤喔~";
@@ -393,9 +399,9 @@ public class SearchBaseAction extends ActionSupport{
                         message = "該帳號已經被註冊，請換一個其他的手機號或是點擊忘記密碼試試！";
                     }
 
-                    cursor = collection.find(new Document().append("phone", username)).iterator();
+                    cursorr = collection.find(new Document().append("phone", username)).iterator();
 
-                    if (cursor.hasNext()){
+                    if (cursorr.hasNext()){
 
                         code = -2;
 
@@ -419,7 +425,7 @@ public class SearchBaseAction extends ActionSupport{
         result.put("resultCode", code);
         result.put("resultMessage", message);
 
-        System.out.println("resultCode:" + code + "   resultMessage:" + message);
+        System.out.println("resultCode:" + code + "   resultMessage:" + message + "    id: " + result.get("_id"));
         mongoDb.close();
         return result;
 
