@@ -124,34 +124,52 @@ public class SearchBaseAction extends ActionSupport{
                     if(searchType.equals("0") && !keyWord.isEmpty()) {//关键字搜寻
                         JSONObject con_json = JSONObject.fromObject(keyWord);
                         Document condition = new Document();
+                        //检索项目
+                        String item = null;
+                        switch(con_json.getInt("item")){
+                            case 0: item = "name";break;
+                            case 1: item = "content";break;
+                        }
+
+                        //关键字部分
+                        List<Document> andOr = new ArrayList<>();
                         List<Document> and = new ArrayList<>();
+                        Pattern regularkey = Pattern.compile("(?i)" + con_json.getString("keyword") + ".*$", Pattern.MULTILINE);
+                        Pattern regularand = Pattern.compile("(?i)" + con_json.getString("and") + ".*$", Pattern.MULTILINE);
                         try{
-                            Pattern regularkey = Pattern.compile("(?i)" + con_json.getString("keyword") + ".*$", Pattern.MULTILINE);
-                            and.add(new Document("content",regularkey));
+                            and.add(new Document(item,regularkey));
+                            and.add(new Document(item,regularand));
+                            andOr.add(new Document("$and",and));
                         }catch (Exception e){
-                            System.out.println("isNull");
+                            andOr.add(new Document(item,regularkey));
                         }
-                        try{
-                            Pattern regularand = Pattern.compile("(?i)" + con_json.getString("and") + ".*$", Pattern.MULTILINE);
-                            and.add(new Document("content",regularand));
-                        }catch (Exception e){
-                            System.out.println("isNull");
-                        }
-                        try{
-                            Pattern regularnot = Pattern.compile("(?i)" + con_json.getString("not") + ".*$", Pattern.MULTILINE);
-                            and.add(new Document("$not",new Document("content",regularnot)));
-                        }catch (Exception e){
-                            System.out.println("isNull");
-                        }
+
                         List<Document> or = new ArrayList<>();
-                        or.add(new Document("$and",and));
+                        Pattern regularor = Pattern.compile("(?i)" + con_json.getString("or") + ".*$", Pattern.MULTILINE);
                         try{
-                            Pattern regularor = Pattern.compile("(?i)" + con_json.getString("or") + ".*$", Pattern.MULTILINE);
-                            or.add(new Document("content",regularor));
+                            or.add(new Document(item,regularkey));
+                            or.add(new Document(item,regularor));
+                            andOr.add(new Document("$or",and));
                         }catch (Exception e){
-                            System.out.println("isNull");
+                            andOr.add(new Document(item,regularkey));
                         }
-                        condition.append("$or",or);
+
+                        List<Document> not = new ArrayList<>();
+                        not.add(new Document("$or",andOr));
+                        Pattern regularnot = Pattern.compile("(?i)" + con_json.getString("not") + ".*$", Pattern.MULTILINE);
+                        try{
+                            not.add(new Document("$not",new Document(item,regularnot)));
+                            condition.append("$and",not);
+                        }catch (Exception e){
+                            condition.append("$or",andOr);
+                        }
+
+                        //有效状态
+                        int state = con_json.getInt("state");
+                        if(state == 0){
+                            condition.append("abandon","Not abandon yet");
+                        }
+
                         cursor = collection.find(condition).limit(15).iterator();
                     }else{
                         cursor = collection.find().limit(15).iterator();
@@ -173,6 +191,7 @@ public class SearchBaseAction extends ActionSupport{
                         //设置正则表达
                         Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
                         condition.add(new Document("name" , regular));
+                        condition.add(new Document("major" , regular));
                         cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
                     }else if(searchType.equals("1")) {//PK搜寻
                         cursor = collection.find(new Document("_id",new ObjectId(keyWord))).limit(15).iterator();
@@ -195,10 +214,67 @@ public class SearchBaseAction extends ActionSupport{
                     MongoCursor<Document> cursor;
                     if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
                         List<Document> condition = new ArrayList<>();
-                        //设置正则表达
-                        Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
-                        condition.add(new Document("name" , regular));
-                        cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
+                        JSONObject con_json = JSONObject.fromObject(keyWord);
+
+                        try{
+                            //设置正则表达
+                            //关键字
+                            List<Document> keywords = new ArrayList<>();
+                            Pattern regular = Pattern.compile("(?i)" + con_json.getString("keyword") + ".*$", Pattern.MULTILINE);
+                            keywords.add(new Document("j_content", regular));
+                            keywords.add(new Document("j_laws", regular));
+                            condition.add(new Document("$or" , keywords));
+                        }catch (Exception e){
+                            System.out.println("is null object");
+                        }
+
+                        try{
+                            //XX年XX字XX号
+                            Pattern regularName = Pattern.compile("(?i)" + con_json.getString("year") + ".*年度.*" + con_json.getString("zihao") + ".*字第.*" + con_json.getString("num") + ".*號", Pattern.MULTILINE);
+                            condition.add(new Document("j_id", regularName));
+                        }catch (Exception e){
+                            System.out.println("is null object");
+                        }
+
+                        try{
+                            //裁判案由
+                            Pattern regularR = Pattern.compile("(?i)" + con_json.getString("reason") + ".*$", Pattern.MULTILINE);
+                            condition.add(new Document("j_reason", regularR));
+                        }catch (Exception e){
+                            System.out.println("is null object");
+                        }
+
+                        try{
+                            //裁判主文
+                            Pattern regularC = Pattern.compile("(?i)主  文.*" + con_json.getString("content") + ".*理  由.*$", Pattern.MULTILINE);
+                            condition.add(new Document("j_reason", regularC));
+                        }catch (Exception e){
+                            System.out.println("is null object");
+                        }
+
+
+                        try{
+                            //裁判类别
+                            try{
+                                switch (con_json.getString("type")){
+                                    case "0": {
+                                        System.out.println("請問你是什麼情況");
+                                        Pattern regularN = Pattern.compile("(?i).*" + "裁定.*$", Pattern.MULTILINE);
+                                        condition.add(new Document("j_id", regularN));
+                                    }break;
+                                    case "1": {
+                                        Pattern regularN = Pattern.compile("(?i).*" + "判決.*$", Pattern.MULTILINE);
+                                        condition.add(new Document("j_id", regularN));
+                                    }break;
+                                }
+                            }catch (Exception e){
+
+                            }
+                        }catch (Exception e){
+                            System.out.println("is null object");
+                        }
+
+                        cursor = collection.find(new Document("$and",condition)).limit(15).iterator();
                     }
                     else{
                         cursor = collection.find().limit(15).iterator();
