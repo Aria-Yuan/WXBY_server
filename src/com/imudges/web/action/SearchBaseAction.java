@@ -135,8 +135,8 @@ public class SearchBaseAction extends ActionSupport{
                         List<Document> andOr = new ArrayList<>();
                         List<Document> and = new ArrayList<>();
                         Pattern regularkey = Pattern.compile("(?i)" + con_json.getString("keyword") + ".*$", Pattern.MULTILINE);
-                        Pattern regularand = Pattern.compile("(?i)" + con_json.getString("and") + ".*$", Pattern.MULTILINE);
                         try{
+                            Pattern regularand = Pattern.compile("(?i)" + con_json.getString("and") + ".*$", Pattern.MULTILINE);
                             and.add(new Document(item,regularkey));
                             and.add(new Document(item,regularand));
                             andOr.add(new Document("$and",and));
@@ -145,19 +145,19 @@ public class SearchBaseAction extends ActionSupport{
                         }
 
                         List<Document> or = new ArrayList<>();
-                        Pattern regularor = Pattern.compile("(?i)" + con_json.getString("or") + ".*$", Pattern.MULTILINE);
                         try{
+                            Pattern regularor = Pattern.compile("(?i)" + con_json.getString("or") + ".*$", Pattern.MULTILINE);
                             or.add(new Document(item,regularkey));
                             or.add(new Document(item,regularor));
-                            andOr.add(new Document("$or",and));
+                            andOr.add(new Document("$or",or));
                         }catch (Exception e){
-                            andOr.add(new Document(item,regularkey));
+
                         }
 
                         List<Document> not = new ArrayList<>();
                         not.add(new Document("$or",andOr));
-                        Pattern regularnot = Pattern.compile("(?i)" + con_json.getString("not") + ".*$", Pattern.MULTILINE);
                         try{
+                            Pattern regularnot = Pattern.compile("(?i)" + con_json.getString("not") + ".*$", Pattern.MULTILINE);
                             not.add(new Document("$not",new Document(item,regularnot)));
                             condition.append("$and",not);
                         }catch (Exception e){
@@ -165,9 +165,15 @@ public class SearchBaseAction extends ActionSupport{
                         }
 
                         //有效状态
-                        int state = con_json.getInt("state");
-                        if(state == 0){
-                            condition.append("abandon","Not abandon yet");
+                        try{
+                            int state = con_json.getInt("state");
+                            if(state == 0){
+                                condition.append("abandon","Not abandon yet");
+                            }else if(state == 1){
+                                condition.append("$not",new Document("abandon","Not abandon yet"));
+                            }
+                        }catch (Exception e){
+
                         }
 
                         cursor = collection.find(condition).limit(15).iterator();
