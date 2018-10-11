@@ -80,5 +80,11 @@
             </result>
         </action>
 
+        <action name="getCaseResult" class="com.imudges.web.action.PredictAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
+
     </package>
 </struts>
