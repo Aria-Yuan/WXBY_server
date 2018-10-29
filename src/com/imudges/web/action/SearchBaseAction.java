@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 
+import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -49,7 +50,8 @@ public class SearchBaseAction extends ActionSupport{
     /**
          * 返回搜寻的结果
          * */
-    protected List<Map<String, Object>> getResult(String type, String keyWord, String searchType){
+    protected List<Map<String, Object>> getResult(String type, String keyWord, String searchType) throws UnsupportedEncodingException {
+            keyWord = new String(keyWord.getBytes("ISO-8859-1"),"UTF-8");
             List<Map<String, Object>> result = new ArrayList<>();
             MongoDBUtil mongoDb = new MongoDBUtil("wxby");
             switch (type){
