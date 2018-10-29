@@ -86,5 +86,17 @@
             </result>
         </action>
 
+        <action name="getNews" class="com.imudges.web.action.NewsAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
+
+        <action name="getComments" class="com.imudges.web.action.CommentAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
+
     </package>
 </struts>
