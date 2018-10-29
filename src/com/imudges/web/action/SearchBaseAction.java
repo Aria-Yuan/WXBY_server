@@ -664,4 +664,66 @@ public class SearchBaseAction extends ActionSupport{
         return result;
     }
 
+    protected Map<String, Object> getNews(){
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        MongoCollection<Document> collection = mongoDb.getCollection("hotnews");
+        MongoCursor<Document> cursor = collection.find().limit(15).iterator();
+        Map<String,Object>result = new HashMap<>();
+        List<Map<String, Object>> hots = new ArrayList<>();
+        while (cursor.hasNext()) {
+            Map<String, Object> map = new HashMap<String, Object>();
+            map.putAll(cursor.next());
+//            map.put("_id", new ObjectId(map.get("_id").toString()).toString());
+            hots.add(map);
+        }
+        result.put("hotNews", hots);
+
+//        collection = mongoDb.getCollection("comment");
+//        cursor = collection.find().limit(1).iterator();
+//        List<Map<String, Object>> commnet = new ArrayList<>();
+//        while (cursor.hasNext()) {
+//            Map<String, Object> map = new HashMap<String, Object>();
+//            map.putAll(cursor.next());
+////            map.put("_id", new ObjectId(map.get("_id").toString()).toString());
+//            commnet.add(map);
+//        }
+//        result.put("comment", commnet);
+
+        cursor.close();
+//        List<Map<String,Object>> a = new ArrayList<>();
+//        result.put("lalala", a);
+        return result;
+    }
+
+    protected Map<String, Object> getComment(){
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        MongoCollection<Document> collection = mongoDb.getCollection("comment");
+        MongoCursor<Document> cursor = collection.find().limit(15).iterator();
+        Map<String,Object>result = new HashMap<>();
+        List<Map<String, Object>> hots = new ArrayList<>();
+//        while (cursor.hasNext()) {
+//            Map<String, Object> map = new HashMap<String, Object>();
+//            map.putAll(cursor.next());
+////            map.put("_id", new ObjectId(map.get("_id").toString()).toString());
+//            hots.add(map);
+//        }
+//        result.put("hotNews", hots);
+
+//        collection = mongoDb.getCollection("comment");
+//        cursor = collection.find().limit(1).iterator();
+        List<Map<String, Object>> commnet = new ArrayList<>();
+        while (cursor.hasNext()) {
+            Map<String, Object> map = new HashMap<String, Object>();
+            map.putAll(cursor.next());
+//            map.put("_id", new ObjectId(map.get("_id").toString()).toString());
+            commnet.add(map);
+        }
+        result.put("comment", commnet);
+
+        cursor.close();
+//        List<Map<String,Object>> a = new ArrayList<>();
+//        result.put("lalala", a);
+        return result;
+    }
+
 }
