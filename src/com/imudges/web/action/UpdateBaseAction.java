@@ -8,6 +8,7 @@ import net.sf.json.JSONObject;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,7 +40,8 @@ public class UpdateBaseAction extends ActionSupport {
     /**
      * 返回搜寻的结果
      * */
-    protected List<Map<String, Object>> getResult(String type, String condition, String searchType){
+    protected List<Map<String, Object>> getResult(String type, String condition, String searchType) throws UnsupportedEncodingException {
+//        condition = new String(condition.getBytes("ISO-8859-1"),"UTF-8");
         List<Map<String, Object>> result = new ArrayList<>();
         MongoDBUtil mongoDb = new MongoDBUtil("wxby");
         switch (type){
@@ -61,6 +63,7 @@ public class UpdateBaseAction extends ActionSupport {
                 }else if(searchType.equals("1")){//更新提问
                     MongoCollection<Document> collection_l = mongoDb.getCollection("lawyer");
                     MongoCollection<Document> collection_r = mongoDb.getCollection("register");
+                    System.out.println(condition);
                     target = Document.parse(condition);
                     target.append("_id",new ObjectId(target.getString("_id")));
                     Document oldOne = collection.find(new Document().append("_id",target.getObjectId("_id"))).first();

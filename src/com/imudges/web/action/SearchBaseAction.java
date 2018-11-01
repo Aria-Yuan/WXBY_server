@@ -51,7 +51,7 @@ public class SearchBaseAction extends ActionSupport{
          * 返回搜寻的结果
          * */
     protected List<Map<String, Object>> getResult(String type, String keyWord, String searchType) throws UnsupportedEncodingException {
-            keyWord = new String(keyWord.getBytes("ISO-8859-1"),"UTF-8");
+//            keyWord = new String(keyWord.getBytes("ISO-8859-1"),"UTF-8");
             List<Map<String, Object>> result = new ArrayList<>();
             MongoDBUtil mongoDb = new MongoDBUtil("wxby");
             switch (type){
@@ -358,31 +358,89 @@ public class SearchBaseAction extends ActionSupport{
     }
 
     protected Map<String, Object> getCaseConsultResult(String id){
+//        id = "201810311101380970557865";
+        System.out.println(id);
         Map<String, Object> result = new HashMap<>();
-        MongoDBUtil mongoDb = new MongoDBUtil("wxbyt");
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
         MongoCollection<Document> collection = mongoDb.getCollection("case_consult");
+        MongoCollection<Document> jCollection = mongoDb.getCollection("judgement");
 
-        try {
+        MongoCursor<Document> a = collection.find(new Document("id", id)).iterator();
+        Document res = a.next();
+
+//        try {
 //            String text = "1";
-            String[] args1 = new String[] { "python ", "D:\\prediction.py", id };
-            Process proc = Runtime.getRuntime().exec(args1);// 执行py文件
-            BufferedReader in = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-            String line = null;
-            while ((line = in.readLine()) != null) {
-                System.out.println(line);
+
+            if(res.getInteger("state") == 0){
+                Document newOne = new Document("$set", new Document("state", 1));
+                collection.updateOne(res, newOne);
+
+                Thread t = new Thread(){
+                    public void run(){
+                        try{
+                            String[] args1 = new String[] { "python ", "D:\\prediction.py", id};
+                            Process proc = Runtime.getRuntime().exec(args1);// 执行py文件
+                            BufferedReader in = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+                            String line = null;
+                            while ((line = in.readLine()) != null) {
+                                System.out.println(line);
+                            }
+                            in.close();
+                        }catch (IOException e){
+                            e.printStackTrace();
+                        }
+                    }
+                };
+                t.start();
             }
-            in.close();
-            proc.waitFor();
-            MongoCursor<Document> a = collection.find(new Document("id", id)).iterator();
-            Document res = a.next();
-            System.out.println(res.get("result").toString() + "**********************************");
-            result.put("result", res.get("result"));
-            result.put("neighbor", res.get("neighborlst"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+
+//            proc.waitFor();
+//            List<String> neighborlst = (ArrayList<String>)res.get("neighborlst");
+//            List<ObjectId> neighborlstCopy = new ArrayList<>();
+//
+//            MongoCollection<Document> collectionJ = mongoDb.getCollection("judgement");
+//            for (int i = 0 ; i < neighborlst.size(); i++) {
+//                String j_id = neighborlst.get(i).split("_")[1].split(".")[0];
+//                System.out.println(j_id);
+//                Pattern regularkey = Pattern.compile("(?i)" + j_id + ".*$", Pattern.MULTILINE);
+//                ObjectId j = collectionJ.find(new Document("j_id",regularkey)).iterator().next().getObjectId("_id");
+//                neighborlstCopy.add(j);
+//            }
+//            Document update_one = new Document("$set", new Document("neighborlst", neighborlstCopy));
+
+            MongoCursor<Document> b = collection.find(new Document("id", id)).iterator();
+            res = b.next();
+
+            result.put("state", res.getInteger("state"));
+
+            if(res.getInteger("state") == 2){
+                ArrayList<Document> similars = new ArrayList<>();
+                for (ObjectId ids: res.get("neighborlst", new ArrayList<ObjectId>())){
+                    MongoCursor<Document> jcursor = jCollection.find(new Document("_id", ids)).iterator();
+                    //            System.out.println(jcursor.next());
+                    //            similars.add(jcursor.next());
+                    Document temp = jcursor.next();
+                    Document tempData = new Document();
+                    tempData.put("j_id", temp.get("j_id"));
+                    tempData.put("j_date", temp.get("j_date"));
+                    tempData.put("j_reason", temp.get("j_reason"));
+                    tempData.put("_id", temp.get("_id").toString());
+                    similars.add(tempData);
+                    System.out.println(tempData);
+                }
+                result.put("similar", similars);
+
+                System.out.println(res.get("result").toString() + "**********************************");
+                result.put("result", res.get("result"));
+            }
+//            result.put("neighbor", res.get("neighborlst"));
+//        }
+//        catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
 
 //        System.out.println(id);
 //        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
@@ -397,21 +455,7 @@ public class SearchBaseAction extends ActionSupport{
 //            result.put("content", data.get("content"));
 //            result.put("result", data.get("result"));
 //
-//            ArrayList<Document> similars = new ArrayList<>();
-//            for (ObjectId ids: data.get("similar", new ArrayList<ObjectId>())){
-//                MongoCursor<Document> jcursor = jCollection.find(new Document("_id", ids)).iterator();
-//                //            System.out.println(jcursor.next());
-//                //            similars.add(jcursor.next());
-//                Document temp = jcursor.next();
-//                Document tempData = new Document();
-//                tempData.put("j_id", temp.get("j_id"));
-//                tempData.put("j_date", temp.get("j_date"));
-//                tempData.put("j_reason", temp.get("j_reason"));
-//                tempData.put("_id", temp.get("_id").toString());
-//                similars.add(tempData);
-//                System.out.println(tempData);
-//            }
-//            result.put("similar", similars);
+
 //            //        System.out.println();
 //            //        System.out.println();
 //            //        System.out.println("similar: " + similars);
@@ -651,7 +695,7 @@ public class SearchBaseAction extends ActionSupport{
     protected Map<String, Object> getCaseResult(String id, String content, String owner){
         Map<String, Object> result = new HashMap<>();
 
-        MongoDBUtil mongoDb = new MongoDBUtil("wxbyt");
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
         MongoCollection<Document> collection = mongoDb.getCollection("case_consult");
 
         String test = "事實及理由上訴人經合法通知,未於言詞辯論期日到場,核無民事訴訟法第386條所列各款情形,爰依被上訴人聲請,由其一造辯論而為判決二、被上訴人起訴主張:上訴人於民國101年11月1日,向被上訴人承租新北市○區∞o路00o0號3樓房屋(下稱系爭房屋),租期1年即自101年11月1日起至102年10月31日止,租金每月新台幣(下同)1萬2,000元,於每月1日前給付。嗣租期屆滿,上訴人拒絕遷讓返還系爭房屋,並累計積欠租金3萬6,θθ0元未付,迭經被上訴人催討,上訴人均置之不理。又本件租期既已屆滿,上訴人即屬無權占有系爭房屋,另應自102年11月1日起至返還房屋之日止,按月賠償被上訴人相當於未收租金額計算之損害金。爰依租賃及不當得利之法律關係,求為判決∶上訴人應將系爭房屋全部遷讓返還被上訴人,並應給付被上訴人3萬6,000元,暨應自102年11月1日起至返還房屋之日止,按月給付被上訴人1萬2,000元(原審判決上訴人敗訴,並依職權為准、免假執行宣告,上訴人不服提起上訴)。並答辯聲明:上訴駁回。三、上訴人則以:被上訴人未給與上訴人搬遷費用,上訴人無法遷讓返還系爭房屋等語,資為抗辯。並上訴聲明:(一)原判決廢棄;(二)被上訴人在第一審之訴駁回。四、被上訴人主張上訴人於101年11月1日,向被上訴人承租系爭房屋,租期1年至102年10月31日止,租金每月1萬2,000元,嗣租期屆滿,上訴人拒絕遷讓返還系爭房屋,並累計積欠租金3萬6,000元未付,且無權占有系爭房屋,致被上訴人受有每月相當租金額之不當得利損害金,被上訴人自得依租賃及不當得利之法律關係,請求上訴人將系爭房屋全部遷讓返還被上訴人,並給付租金3萬6,000元,暨自102年11月1日起至返還房屋之日止,按月給付不當得利損害金1萬2,000元等情,有租賃契約書在卷可稽(原審司板簡調字卷第6、7頁)且為上訴人所不爭執,自堪信為真實,並屬於法有據。上訴人雖抗辯被上訴人未給與上訴人搬遷費用,上訴人無法遷讓返還系爭房屋云云,惟所辯尚屬如何遷讓房屋之執行問題,自不能據以對抗被上訴人。五、從而,被上訴人依租賃及不當得利之法律關係,求為判決上訴人應將系爭房屋全部遷讓返還被上訴人,並應給付被上訴人3萬6,000元,暨應自102年11月1日起至返還房屋之日止按月給付被上訴人1萬2,000元,自屬應予准許。原審為上訴人敗訴之判決,核無違誤,上訴論旨指摘原判決不當,求予廢棄改判,為無理由六、兩造其餘之攻擊或防禦方法及未經援用之證據,經本院斟酌後,認為均不足以影響本判決之結果,自無逐一詳予論駁之必要,併此敘明。七、據上論結,本件上訴為無理由,依民事訴訟法第436條之1第3項、第463條、第385條第1項前段、第449條第1項、第78條判決如主文";
@@ -659,6 +703,7 @@ public class SearchBaseAction extends ActionSupport{
         wawawa.append("content", test);
         wawawa.append("id", id);
         wawawa.append("owner", new ObjectId(owner));
+        wawawa.append("state", 0);
         collection.insertOne(wawawa);
         result.put("type", 1);
 
