@@ -8,7 +8,10 @@ import com.mongodb.client.MongoCursor;
 import com.opensymphony.xwork2.ActionSupport;
 import jdk.nashorn.internal.scripts.JO;
 import net.sf.json.JSONObject;
+import org.bson.BsonDocument;
 import org.bson.Document;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
 
@@ -21,6 +24,8 @@ import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
+
+import static com.mongodb.client.model.Projections.fields;
 
 /**
  * Created by HUPENG on 2017/4/30.
@@ -50,311 +55,334 @@ public class SearchBaseAction extends ActionSupport{
     /**
          * 返回搜寻的结果
          * */
-    protected List<Map<String, Object>> getResult(String type, String keyWord, String searchType) throws UnsupportedEncodingException {
+    protected List<Map<String, Object>> getJudgementResult(String keyWord, String searchType) throws UnsupportedEncodingException {
 //            keyWord = new String(keyWord.getBytes("ISO-8859-1"),"UTF-8");
-            List<Map<String, Object>> result = new ArrayList<>();
-            MongoDBUtil mongoDb = new MongoDBUtil("wxby");
-            switch (type){
-                case "firm":{
-                    MongoCollection<Document> collection = mongoDb.getCollection("law_firm");
-                    MongoCursor<Document> cursor;
-                    if(searchType.equals("0")){//关键字搜寻
-                        List<Document> condition = new ArrayList<>();
-                        //设置正则表达
-                        Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
-                        condition.add(new Document("firm_name" , regular));
-                        condition.add(new Document("firm_addr" , regular));
-                        condition.add(new Document("firm_type" , regular));
-                        condition.add(new Document("firm_dscrpt" , regular));
-                        condition.add(new Document("firm_intro" , regular));
-                        condition.add(new Document("firm_major" , regular));
-                        cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
-                    }else if(searchType.equals("1")){//按地区搜寻
-                        Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
-                        cursor = collection.find(new Document("firm_addr",regular)).limit(15).iterator();
-                    }else if(searchType.equals("2")){
-                        cursor = collection.find(new Document("_id",keyWord)).limit(15).iterator();
-                    } else{
-                        cursor = collection.find().limit(10).iterator();
-                    }
-                    while (cursor.hasNext()) {
-                        Map<String, Object> map = new HashMap<String, Object>();
-                        map.putAll(cursor.next());
-                        result.add(map);
-                    }
-                    cursor.close();
-                }break;
-                case "counseling":{
-                    System.out.println(keyWord);
-                    MongoCollection<Document> collection = mongoDb.getCollection("legal_counseling");
-                    MongoCollection<Document> collection_l = mongoDb.getCollection("lawyer");
-                    MongoCollection<Document> collection_q = mongoDb.getCollection("register");
-                    MongoCursor<Document> cursor;
-                    if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
-                        List<Document> condition = new ArrayList<>();
-                        //设置正则表达
-                        Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
-                        condition.add(new Document("content.question" , regular));
-                        cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
-                    }else if(searchType.equals("1")){//新增
-                        Document counseling = Document.parse(keyWord);
-                        counseling.append("questioner",new ObjectId(counseling.getString("questioner")));
-                        counseling.append("lawyer",new ObjectId(counseling.getString("lawyer")));
-                        //生成編號
-                        Random ran = new Random(System.currentTimeMillis());
-                        String text = ran.nextLong() + "";
-                        counseling.append("id", text);
+        List<Map<String, Object>> result = new ArrayList<>();
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        System.out.println(keyWord);
+        MongoCollection<Document> collection = mongoDb.getCollection("judgement");
+        MongoCursor<Document> cursor;
+        if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
+            List<Document> condition = new ArrayList<>();
+            JSONObject con_json = JSONObject.fromObject(keyWord);
 
-                        System.out.println(counseling);
-                        collection.insertOne(counseling);
-                        cursor = collection.find(new Document("id", text)).limit(1).iterator();
-                    }else if(searchType.equals("2")){
-                        cursor = collection.find(new Document("questioner", new ObjectId(keyWord))).limit(15).iterator();
-                    }else if(searchType.equals("3")){
-                        MongoCursor<Document> lawyerCursor1 = collection_l.find(new Document("reg_id",new ObjectId(keyWord))).iterator();
-                        cursor = collection.find(new Document("lawyer", lawyerCursor1.next().getObjectId("_id"))).limit(15).iterator();
-                    }else{
-                        cursor = collection.find().limit(15).iterator();
-                    }
-                    while (cursor.hasNext()) {
-                        Map<String, Object> map = new HashMap<String, Object>();
-                        Document a = cursor.next();
-                        a.put("_id", a.getObjectId("_id").toString());
-                        MongoCursor<Document> questionerCursor = collection_q.find(new Document("_id",a.getObjectId("questioner"))).iterator();
-                        a.put("questioner", questionerCursor.next().getString("name"));
-                        MongoCursor<Document> lawyerCursor = collection_l.find(new Document("_id",a.getObjectId("lawyer"))).iterator();
-                        Document lawyer = lawyerCursor.next();
-                        lawyer.put("_id",lawyer.getObjectId("_id").toString());
-                        lawyer.put("reg_id",lawyer.getObjectId("reg_id").toString());
-                        a.put("lawyer", lawyer);
-                        map.putAll(a);
-                        result.add(map);
-                    }
-                    cursor.close();
-                }break;
-                case "law":{
-                    MongoCollection<Document> collection = mongoDb.getCollection("law");
-                    MongoCursor<Document> cursor;
-                    if(searchType.equals("0") && !keyWord.isEmpty()) {//关键字搜寻
-                        JSONObject con_json = JSONObject.fromObject(keyWord);
-                        Document condition = new Document();
-                        //检索项目
-                        String item = null;
-                        switch(con_json.getInt("item")){
-                            case 0: item = "name";break;
-                            case 1: item = "content";break;
-                        }
-                        //关键字部分
-                        List<Document> andOr = new ArrayList<>();
-                        List<Document> and = new ArrayList<>();
-                        Pattern regularkey = Pattern.compile("(?i)" + con_json.getString("keyword") + ".*$", Pattern.MULTILINE);
-                        try{
-                            Pattern regularand = Pattern.compile("(?i)" + con_json.getString("and") + ".*$", Pattern.MULTILINE);
-                            and.add(new Document(item,regularkey));
-                            and.add(new Document(item,regularand));
-                            andOr.add(new Document("$and",and));
-                        }catch (Exception e){
-                            andOr.add(new Document(item,regularkey));
-                        }
-
-                        List<Document> or = new ArrayList<>();
-                        try{
-                            Pattern regularor = Pattern.compile("(?i)" + con_json.getString("or") + ".*$", Pattern.MULTILINE);
-                            or.add(new Document(item,regularkey));
-                            or.add(new Document(item,regularor));
-                            andOr.add(new Document("$or",or));
-                        }catch (Exception e){
-
-                        }
-
-                        List<Document> not = new ArrayList<>();
-                        not.add(new Document("$or",andOr));
-                        try{
-                            Pattern regularnot = Pattern.compile("(?i)" + con_json.getString("not") + ".*$", Pattern.MULTILINE);
-                            not.add(new Document(item,new Document("$ne",regularnot)));
-                            condition.append("$and",not);
-                        }catch (Exception e){
-                            condition.append("$or",andOr);
-                        }
-
-                        //有效状态
-                        try{
-                            int state = con_json.getInt("state");
-                            if(state == 0){
-                                condition.append("abandon","Not abandon yet");
-                            }else if(state == 1){
-                                condition.append("abandon",new Document("$ne","Not abandon yet"));
-                            }
-                        }catch (Exception e){
-
-                        }
-
-                        //期间
-                        try{
-                            String start = con_json.getString("start");
-                            System.out.println(start);
-                            SimpleDateFormat sdf =   new SimpleDateFormat( "yyyy-MM-dd" );
-                            Date start_date = sdf.parse(start);
-                            condition.append("sdate", new BasicDBObject("$gte", start_date));
-
-                        }catch(Exception e){
-                            System.out.println("我错了");
-                        }
-                        try{
-                            String end = con_json.getString("end");
-                            System.out.println(end);
-                            SimpleDateFormat sdf =   new SimpleDateFormat( "yyyy-MM-dd" );
-                            Date end_date = sdf.parse(end);
-                            condition.append("sdate", BasicDBObjectBuilder.start("$gte", sdf.parse(con_json.getString("start"))).add("$lte", end_date).get());
-
-                        }catch(Exception e){
-
-                        }
-                        System.out.println(condition);
-                        cursor = collection.find(condition).limit(15).iterator();
-                    }else{
-                        cursor = collection.find().limit(15).iterator();
-                    }
-                    while (cursor.hasNext()) {
-                        Map<String, Object> map = new HashMap<String, Object>();
-                        Document a = cursor.next();
-                        a.put("_id", a.getObjectId("_id").toString());
-                        map.putAll(a);
-                        result.add(map);
-                    }
-                    cursor.close();
-                }break;
-                case "lawyer":{
-                    MongoCollection<Document> collection = mongoDb.getCollection("lawyer");
-                    MongoCursor<Document> cursor;
-                    if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
-                        List<Document> condition = new ArrayList<>();
-                        //设置正则表达
-                        Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
-                        condition.add(new Document("name" , regular));
-                        condition.add(new Document("major" , regular));
-                        cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
-                    }else if(searchType.equals("1")) {//PK搜寻
-                        cursor = collection.find(new Document("_id",new ObjectId(keyWord))).limit(15).iterator();
-                    }
-                    else{
-                        cursor = collection.find().limit(15).iterator();
-                    }
-                    while (cursor.hasNext()) {
-                        Map<String, Object> map = new HashMap<String, Object>();
-                        Document a = cursor.next();
-                        a.put("_id", a.getObjectId("_id").toString());
-                        a.put("reg_id", a.getObjectId("reg_id").toString());
-                        map.putAll(a);
-                        result.add(map);
-                    }
-                    cursor.close();
-                }break;
-                case "judgement":{
-                    System.out.println(keyWord);
-                    MongoCollection<Document> collection = mongoDb.getCollection("judgement");
-                    MongoCursor<Document> cursor;
-                    if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
-                        List<Document> condition = new ArrayList<>();
-                        JSONObject con_json = JSONObject.fromObject(keyWord);
-
-                        try{
-                            //设置正则表达
-                            //关键字
-                            List<Document> keywords = new ArrayList<>();
-                            Pattern regular = Pattern.compile("(?i)" + con_json.getString("keyword") + ".*$", Pattern.MULTILINE);
-                            keywords.add(new Document("j_content", regular));
-                            keywords.add(new Document("j_laws", regular));
-                            condition.add(new Document("$or" , keywords));
-                        }catch (Exception e){
-                            System.out.println("is null object");
-                        }
-
-                        try{
-                            //XX年XX字XX号
-                            Pattern regularName = Pattern.compile("(?i)" + con_json.getString("year") + ".*年度.*" + con_json.getString("zihao") + ".*字第.*" + con_json.getString("num") + ".*號", Pattern.MULTILINE);
-                            condition.add(new Document("j_id", regularName));
-                        }catch (Exception e){
-                            System.out.println("is null object");
-                        }
-
-                        try{
-                            //裁判案由
-                            Pattern regularR = Pattern.compile("(?i)" + con_json.getString("reason") + ".*$", Pattern.MULTILINE);
-                            condition.add(new Document("j_reason", regularR));
-                        }catch (Exception e){
-                            System.out.println("is null object");
-                        }
-
-                        try{
-                            //裁判主文
-                            Pattern regularC = Pattern.compile("(?i)主  文.*" + con_json.getString("content") + ".*理  由.*$", Pattern.MULTILINE);
-                            condition.add(new Document("j_reason", regularC));
-                        }catch (Exception e){
-                            System.out.println("is null object");
-                        }
-
-
-                        try{
-                            //裁判类别
-                            try{
-                                switch (con_json.getString("type")){
-                                    case "0": {
-                                        System.out.println("請問你是什麼情況");
-                                        Pattern regularN = Pattern.compile("(?i).*" + "裁定.*$", Pattern.MULTILINE);
-                                        condition.add(new Document("j_id", regularN));
-                                    }break;
-                                    case "1": {
-                                        Pattern regularN = Pattern.compile("(?i).*" + "判決.*$", Pattern.MULTILINE);
-                                        condition.add(new Document("j_id", regularN));
-                                    }break;
-                                }
-                            }catch (Exception e){
-
-                            }
-                        }catch (Exception e){
-                            System.out.println("is null object");
-                        }
-
-                        //期间
-                        try{
-                            String start = con_json.getString("start");
-                            System.out.println(start);
-                            SimpleDateFormat sdf =   new SimpleDateFormat( "yyyy-MM-dd" );
-                            Date start_date = sdf.parse(start);
-                            condition.add(new Document("date", new BasicDBObject("$gte", start_date)));
-
-                        }catch(Exception e){
-                            System.out.println("我错了");
-                        }
-                        try{
-                            String end = con_json.getString("end");
-                            System.out.println(end);
-                            SimpleDateFormat sdf =   new SimpleDateFormat( "yyyy-MM-dd" );
-                            Date end_date = sdf.parse(end);
-                            condition.add(new Document("date", BasicDBObjectBuilder.start("$gte", sdf.parse(con_json.getString("start"))).add("$lte", end_date).get()));
-
-                        }catch(Exception e){
-
-                        }
-
-                        cursor = collection.find(new Document("$and",condition)).limit(15).iterator();
-                    }
-                    else{
-                        cursor = collection.find().limit(15).iterator();
-                    }
-                    while (cursor.hasNext()) {
-                        Map<String, Object> map = new HashMap<String, Object>();
-                        Document a = cursor.next();
-                        a.put("_id", a.getObjectId("_id").toString());
-                        map.putAll(a);
-                        result.add(map);
-                    }
-                    cursor.close();
-                }
+            try{
+                //设置正则表达
+                //关键字
+                List<Document> keywords = new ArrayList<>();
+                Pattern regular = Pattern.compile("(?i)" + con_json.getString("keyword") + ".*$", Pattern.MULTILINE);
+                keywords.add(new Document("j_content", regular));
+                keywords.add(new Document("j_laws", regular));
+                condition.add(new Document("$or" , keywords));
+            }catch (Exception e){
+                System.out.println("is null object");
             }
-            mongoDb.close();
-            return result;
+
+            try{
+                //XX年XX字XX号
+                Pattern regularName = Pattern.compile("(?i)" + con_json.getString("year") + ".*年度.*" + con_json.getString("zihao") + ".*字第.*" + con_json.getString("num") + ".*號", Pattern.MULTILINE);
+                condition.add(new Document("j_id", regularName));
+            }catch (Exception e){
+                System.out.println("is null object");
+            }
+
+            try{
+                //裁判案由
+                Pattern regularR = Pattern.compile("(?i)" + con_json.getString("reason") + ".*$", Pattern.MULTILINE);
+                condition.add(new Document("j_reason", regularR));
+            }catch (Exception e){
+                System.out.println("is null object");
+            }
+
+            try{
+                //裁判主文
+                Pattern regularC = Pattern.compile("(?i)主  文.*" + con_json.getString("content") + ".*理  由.*$", Pattern.MULTILINE);
+                condition.add(new Document("j_reason", regularC));
+            }catch (Exception e){
+                System.out.println("is null object");
+            }
+
+            try{
+                //裁判类别
+                try{
+                    switch (con_json.getString("type")){
+                        case "0": {
+                            System.out.println("請問你是什麼情況");
+                            Pattern regularN = Pattern.compile("(?i).*" + "裁定.*$", Pattern.MULTILINE);
+                            condition.add(new Document("j_id", regularN));
+                        }break;
+                        case "1": {
+                            Pattern regularN = Pattern.compile("(?i).*" + "判決.*$", Pattern.MULTILINE);
+                            condition.add(new Document("j_id", regularN));
+                        }break;
+                    }
+                }catch (Exception e){
+
+                }
+            }catch (Exception e){
+                System.out.println("is null object");
+            }
+
+            //期间
+            try{
+                String start = con_json.getString("start");
+                System.out.println(start);
+                SimpleDateFormat sdf =   new SimpleDateFormat( "yyyy-MM-dd" );
+                Date start_date = sdf.parse(start);
+                condition.add(new Document("date", new BasicDBObject("$gte", start_date)));
+
+            }catch(Exception e){
+                System.out.println("我错了");
+            }
+            try{
+                String end = con_json.getString("end");
+                System.out.println(end);
+                SimpleDateFormat sdf =   new SimpleDateFormat( "yyyy-MM-dd" );
+                Date end_date = sdf.parse(end);
+                condition.add(new Document("date", BasicDBObjectBuilder.start("$gte", sdf.parse(con_json.getString("start"))).add("$lte", end_date).get()));
+
+            }catch(Exception e){
+
+            }
+
+            cursor = collection.find(new Document("$and",condition)).limit(15).iterator();
+        }
+        else{
+            cursor = collection.find().limit(15).iterator();
+        }
+        while (cursor.hasNext()) {
+            Map<String, Object> map = new HashMap<String, Object>();
+            Document a = cursor.next();
+            a.put("_id", a.getObjectId("_id").toString());
+            map.putAll(a);
+            result.add(map);
+        }
+        cursor.close();
+        mongoDb.close();
+        return result;
+    }
+
+    protected List<Map<String, Object>> getLawyerResult(String keyWord, String searchType){
+        List<Map<String, Object>> result = new ArrayList<>();
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        MongoCollection<Document> collection = mongoDb.getCollection("lawyer");
+        MongoCursor<Document> cursor;
+        if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
+            List<Document> condition = new ArrayList<>();
+            //设置正则表达
+            Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
+            condition.add(new Document("name" , regular));
+            condition.add(new Document("major" , regular));
+            cursor = collection.find(new Document("$or",condition))
+                    .projection(new Document("_id",1)
+                            .append("name",1)
+                            .append("job",1)
+                            .append("company",1)
+                            .append("major",1)
+                            .append("price",1)).limit(15).iterator();
+        }else if(searchType.equals("1")) {//PK搜寻
+            cursor = collection.find(new Document("_id",new ObjectId(keyWord))).limit(15).iterator();
+        }
+        else{
+            cursor = collection.find().limit(15).iterator();
+        }
+        while (cursor.hasNext()) {
+            Map<String, Object> map = new HashMap<String, Object>();
+            Document a = cursor.next();
+            a.put("_id", a.getObjectId("_id").toString());
+            a.put("reg_id", a.getObjectId("reg_id").toString());
+            map.putAll(a);
+            result.add(map);
+        }
+        cursor.close();
+        mongoDb.close();
+        return result;
+    }
+
+    protected List<Map<String, Object>> getLawResult(String keyWord, String searchType){
+        List<Map<String, Object>> result = new ArrayList<>();
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        MongoCollection<Document> collection = mongoDb.getCollection("law");
+        MongoCursor<Document> cursor;
+        if(searchType.equals("0") && !keyWord.isEmpty()) {//关键字搜寻
+            JSONObject con_json = JSONObject.fromObject(keyWord);
+            Document condition = new Document();
+            //检索项目
+            String item = null;
+            switch(con_json.getInt("item")){
+                case 0: item = "name";break;
+                case 1: item = "content";break;
+            }
+            //关键字部分
+            List<Document> andOr = new ArrayList<>();
+            List<Document> and = new ArrayList<>();
+            Pattern regularkey = Pattern.compile("(?i)" + con_json.getString("keyword") + ".*$", Pattern.MULTILINE);
+            try{
+                Pattern regularand = Pattern.compile("(?i)" + con_json.getString("and") + ".*$", Pattern.MULTILINE);
+                and.add(new Document(item,regularkey));
+                and.add(new Document(item,regularand));
+                andOr.add(new Document("$and",and));
+            }catch (Exception e){
+                andOr.add(new Document(item,regularkey));
+            }
+
+            List<Document> or = new ArrayList<>();
+            try{
+                Pattern regularor = Pattern.compile("(?i)" + con_json.getString("or") + ".*$", Pattern.MULTILINE);
+                or.add(new Document(item,regularkey));
+                or.add(new Document(item,regularor));
+                andOr.add(new Document("$or",or));
+            }catch (Exception e){
+
+            }
+
+            List<Document> not = new ArrayList<>();
+            not.add(new Document("$or",andOr));
+            try{
+                Pattern regularnot = Pattern.compile("(?i)" + con_json.getString("not") + ".*$", Pattern.MULTILINE);
+                not.add(new Document(item,new Document("$ne",regularnot)));
+                condition.append("$and",not);
+            }catch (Exception e){
+                condition.append("$or",andOr);
+            }
+
+            //有效状态
+            try{
+                int state = con_json.getInt("state");
+                if(state == 0){
+                    condition.append("abandon","Not abandon yet");
+                }else if(state == 1){
+                    condition.append("abandon",new Document("$ne","Not abandon yet"));
+                }
+            }catch (Exception e){
+
+            }
+
+            //期间
+            try{
+                String start = con_json.getString("start");
+                System.out.println(start);
+                SimpleDateFormat sdf =   new SimpleDateFormat( "yyyy-MM-dd" );
+                Date start_date = sdf.parse(start);
+                condition.append("sdate", new BasicDBObject("$gte", start_date));
+
+            }catch(Exception e){
+                System.out.println("我错了");
+            }
+            try{
+                String end = con_json.getString("end");
+                System.out.println(end);
+                SimpleDateFormat sdf =   new SimpleDateFormat( "yyyy-MM-dd" );
+                Date end_date = sdf.parse(end);
+                condition.append("sdate", BasicDBObjectBuilder.start("$gte", sdf.parse(con_json.getString("start"))).add("$lte", end_date).get());
+
+            }catch(Exception e){
+
+            }
+            System.out.println(condition);
+            cursor = collection.find(condition).limit(15).iterator();
+        }else{
+            cursor = collection.find().limit(15).iterator();
+        }
+        while (cursor.hasNext()) {
+            Map<String, Object> map = new HashMap<String, Object>();
+            Document a = cursor.next();
+            a.put("_id", a.getObjectId("_id").toString());
+            map.putAll(a);
+            result.add(map);
+        }
+        cursor.close();
+        mongoDb.close();
+        return result;
+    }
+
+    protected List<Map<String, Object>> getCounselingResult(String keyWord, String searchType){
+        List<Map<String, Object>> result = new ArrayList<>();
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        System.out.println(keyWord);
+        MongoCollection<Document> collection = mongoDb.getCollection("legal_counseling");
+        MongoCollection<Document> collection_l = mongoDb.getCollection("lawyer");
+        MongoCollection<Document> collection_q = mongoDb.getCollection("register");
+        MongoCursor<Document> cursor;
+        if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
+            List<Document> condition = new ArrayList<>();
+            //设置正则表达
+            Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
+            condition.add(new Document("content.question" , regular));
+            cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
+        }else if(searchType.equals("1")){//新增
+            Document counseling = Document.parse(keyWord);
+            counseling.append("questioner",new ObjectId(counseling.getString("questioner")));
+            counseling.append("lawyer",new ObjectId(counseling.getString("lawyer")));
+            //生成編號
+            Random ran = new Random(System.currentTimeMillis());
+            String text = ran.nextLong() + "";
+            counseling.append("id", text);
+
+            System.out.println(counseling);
+            collection.insertOne(counseling);
+            cursor = collection.find(new Document("id", text)).limit(1).iterator();
+        }else if(searchType.equals("2")){
+            cursor = collection.find(new Document("questioner", new ObjectId(keyWord))).limit(15).iterator();
+        }else if(searchType.equals("3")){
+            MongoCursor<Document> lawyerCursor1 = collection_l.find(new Document("reg_id",new ObjectId(keyWord))).iterator();
+            cursor = collection.find(new Document("lawyer", lawyerCursor1.next().getObjectId("_id"))).limit(15).iterator();
+        }else{
+            cursor = collection.find().limit(15).iterator();
+        }
+        while (cursor.hasNext()) {
+            Map<String, Object> map = new HashMap<String, Object>();
+            Document a = cursor.next();
+            a.put("_id", a.getObjectId("_id").toString());
+            MongoCursor<Document> questionerCursor = collection_q.find(new Document("_id",a.getObjectId("questioner"))).iterator();
+            a.put("questioner", questionerCursor.next().getString("name"));
+            MongoCursor<Document> lawyerCursor = collection_l.find(new Document("_id",a.getObjectId("lawyer"))).iterator();
+            Document lawyer = lawyerCursor.next();
+            lawyer.put("_id",lawyer.getObjectId("_id").toString());
+            lawyer.put("reg_id",lawyer.getObjectId("reg_id").toString());
+            a.put("lawyer", lawyer);
+            map.putAll(a);
+            result.add(map);
+        }
+        cursor.close();
+        mongoDb.close();
+        return result;
+    }
+
+    protected List<Map<String, Object>> getFirmResult(String keyWord, String searchType){
+        List<Map<String, Object>> result = new ArrayList<>();
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        MongoCollection<Document> collection = mongoDb.getCollection("law_firm");
+        MongoCursor<Document> cursor;
+        if(searchType.equals("0")){//关键字搜寻
+            List<Document> condition = new ArrayList<>();
+            //设置正则表达
+            Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
+            condition.add(new Document("firm_name" , regular));
+            condition.add(new Document("firm_addr" , regular));
+            condition.add(new Document("firm_type" , regular));
+            condition.add(new Document("firm_dscrpt" , regular));
+            condition.add(new Document("firm_intro" , regular));
+            condition.add(new Document("firm_major" , regular));
+            cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
+        }else if(searchType.equals("1")){//按地区搜寻
+            Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
+            cursor = collection.find(new Document("firm_addr",regular)).limit(15).iterator();
+        }else if(searchType.equals("2")){
+            cursor = collection.find(new Document("_id",keyWord)).limit(15).iterator();
+        } else{
+            cursor = collection.find().limit(10).iterator();
+        }
+        while (cursor.hasNext()) {
+            Map<String, Object> map = new HashMap<String, Object>();
+            Document a = cursor.next();
+            a.put("_id", a.getObjectId("_id").toString());
+            map.putAll(a);
+            result.add(map);
+        }
+        cursor.close();
+        mongoDb.close();
+        return result;
     }
 
     protected Map<String, Object> getCaseConsultResult(String id){

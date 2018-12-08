@@ -46,7 +46,7 @@ public class LawyerAction extends SearchBaseAction{
 //        }else {
 //            result = getFailResult(-1,"用户名或者密码错误");
 //        }
-        result = getResult("lawyer",condition,type);
+        result = getLawyerResult(condition,type);
         return SUCCESS;
     }
 }

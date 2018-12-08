@@ -47,7 +47,7 @@ public class CounselingAction extends SearchBaseAction {
 //        }else {
 //            result = getFailResult(-1,"用户名或者密码错误");
 //        }
-        result = getResult("counseling",condition, type);
+        result = getCounselingResult(condition, type);
         return SUCCESS;
     }
 
