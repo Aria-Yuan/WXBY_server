@@ -85,6 +85,7 @@ public class SearchBaseAction extends ActionSupport{
                     cursor.close();
                 }break;
                 case "counseling":{
+                    System.out.println(keyWord);
                     MongoCollection<Document> collection = mongoDb.getCollection("legal_counseling");
                     MongoCollection<Document> collection_l = mongoDb.getCollection("lawyer");
                     MongoCollection<Document> collection_q = mongoDb.getCollection("register");
@@ -93,7 +94,7 @@ public class SearchBaseAction extends ActionSupport{
                         List<Document> condition = new ArrayList<>();
                         //设置正则表达
                         Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
-                        condition.add(new Document("content" , regular));
+                        condition.add(new Document("content.question" , regular));
                         cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
                     }else if(searchType.equals("1")){//新增
                         Document counseling = Document.parse(keyWord);
@@ -112,8 +113,7 @@ public class SearchBaseAction extends ActionSupport{
                     }else if(searchType.equals("3")){
                         MongoCursor<Document> lawyerCursor1 = collection_l.find(new Document("reg_id",new ObjectId(keyWord))).iterator();
                         cursor = collection.find(new Document("lawyer", lawyerCursor1.next().getObjectId("_id"))).limit(15).iterator();
-                    }
-                    else{
+                    }else{
                         cursor = collection.find().limit(15).iterator();
                     }
                     while (cursor.hasNext()) {
@@ -144,7 +144,6 @@ public class SearchBaseAction extends ActionSupport{
                             case 0: item = "name";break;
                             case 1: item = "content";break;
                         }
-
                         //关键字部分
                         List<Document> andOr = new ArrayList<>();
                         List<Document> and = new ArrayList<>();
@@ -250,8 +249,9 @@ public class SearchBaseAction extends ActionSupport{
                         result.add(map);
                     }
                     cursor.close();
-                }
+                }break;
                 case "judgement":{
+                    System.out.println(keyWord);
                     MongoCollection<Document> collection = mongoDb.getCollection("judgement");
                     MongoCursor<Document> cursor;
                     if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
