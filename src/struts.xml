@@ -51,11 +51,16 @@
         </action>
 
         <action name="loginAndRegister" class="com.imudges.web.action.RegisterAction">
-        <result name="success" type="json">
-            <param name="root">result</param>
-        </result>
-    </action>
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
 
+        <action name="searchEverything" class="com.imudges.web.action.MainSearchAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
         <!--<action name="caseConsult" class="com.imudges.web.action.CaseConsultAction">-->
             <!--<result name="success" type="json">-->
                 <!--<param name="root">result</param>-->
