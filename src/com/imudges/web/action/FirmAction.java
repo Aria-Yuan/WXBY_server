@@ -40,13 +40,13 @@ public class FirmAction extends SearchBaseAction{
     }
 
     @Override
-    public String execute() throws Exception {
+    public String execute() {
 //        if ("admin".equals(username) && "123".equals(password)){
 //            result = getSuccessResult(null);
 //        }else {
 //            result = getFailResult(-1,"用户名或者密码错误");
 //        }
-        result = getResult("firm",condition,type);
+        result = getFirmResult(condition,type);
         return SUCCESS;
     }
 }

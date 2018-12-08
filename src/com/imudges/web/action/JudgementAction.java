@@ -46,7 +46,7 @@ public class JudgementAction  extends SearchBaseAction{
 //        }else {
 //            result = getFailResult(-1,"用户名或者密码错误");
 //        }
-        result = getResult("judgement",condition,type);
+        result = getJudgementResult(condition,type);
         return SUCCESS;
     }
 }

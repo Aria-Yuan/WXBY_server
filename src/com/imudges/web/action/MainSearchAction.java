@@ -49,9 +49,9 @@ public class MainSearchAction extends SearchBaseAction  {
             Document condition = new Document();
             condition.append("keyword",key);
             condition.append("item", 0);
-            lawResult = getResult("law", condition.toJson(), "0");
+            lawResult = getLawResult(condition.toJson(), "0");
             condition.append("item", 1);
-            lawResult.addAll(getResult("law", condition.toJson(), "0"));
+            lawResult.addAll(getLawResult(condition.toJson(), "0"));
             System.out.println(lawResult.size());
         }catch (Exception e){
         }
@@ -62,7 +62,7 @@ public class MainSearchAction extends SearchBaseAction  {
     //lawyer
     protected List<Map<String, Object>> getLawyer(){
         try {
-            lawyerResult = getResult("lawyer", key, "0");
+            lawyerResult = getLawyerResult(key, "0");
         }catch (Exception e){
         }
 
@@ -74,7 +74,7 @@ public class MainSearchAction extends SearchBaseAction  {
         try {
             Document condition = new Document();
             condition.append("keyword",key);
-            judgementResult = getResult("judgement", condition.toJson(), "0");
+            judgementResult = getJudgementResult(condition.toJson(), "0");
         }catch (Exception e){
         }
 
@@ -84,7 +84,7 @@ public class MainSearchAction extends SearchBaseAction  {
     //law
     protected List<Map<String, Object>> getFirm() {
         try {
-            firmResult = getResult("firm", key, "0");
+            firmResult = getFirmResult(key, "0");
         }catch (Exception e){
         }
 
@@ -95,7 +95,7 @@ public class MainSearchAction extends SearchBaseAction  {
     //counseling
     protected List<Map<String, Object>> getCounseling() {
         try {
-            counselingResult = getResult("counseling", key, "0");
+            counselingResult = getCounselingResult(key, "0");
         }catch (Exception e){
         }
 
