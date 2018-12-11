@@ -146,13 +146,7 @@ public class SearchBaseAction extends ActionSupport{
 
             }
 
-            cursor = collection.find(new Document("$and",condition))
-                    .projection(new Document("_id",1)
-                            .append("name",1)
-                            .append("job",1)
-                            .append("company",1)
-                            .append("major",1)
-                            .append("price",1)).limit(15).iterator();
+            cursor = collection.find(new Document("$and",condition)).limit(15).iterator();
         }
         else{
             cursor = collection.find(new Document("_id",keyWord)).limit(1).iterator();
@@ -215,13 +209,18 @@ public class SearchBaseAction extends ActionSupport{
             return result;
         }
         else{
-            cursor = collection.find().limit(15).iterator();
+            cursor = collection.find()
+                    .projection(new Document("_id",1)
+                            .append("name",1)
+                            .append("job",1)
+                            .append("company",1)
+                            .append("major",1)
+                            .append("price",1)).sort(new Document("comment",-1)).limit(15).iterator();
         }
         while (cursor.hasNext()) {
             Map<String, Object> map = new HashMap<String, Object>();
             Document a = cursor.next();
             a.put("_id", a.getObjectId("_id").toString());
-            a.put("reg_id", a.getObjectId("reg_id").toString());
             map.putAll(a);
             result.add(map);
         }
