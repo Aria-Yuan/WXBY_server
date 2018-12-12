@@ -12,7 +12,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class BaseConsultActivity extends ActionSupport {
+public class BaseConsultAction extends ActionSupport {
 
     MongoDBUtil mongoDb = new MongoDBUtil("wxby");
 
