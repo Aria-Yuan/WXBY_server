@@ -2,7 +2,7 @@ package com.imudges.web.action;
 
 import java.util.Map;
 
-public class QuickConsultResultAction extends BaseConsultActivity  {
+public class QuickConsultResultAction extends BaseConsultAction {
 
     private String id;
 

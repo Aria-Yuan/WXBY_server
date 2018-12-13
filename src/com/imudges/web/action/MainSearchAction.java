@@ -1,5 +1,6 @@
 package com.imudges.web.action;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,12 +27,12 @@ public class MainSearchAction extends SearchBaseAction  {
 
     private Map<String,Object> result = new HashMap<>();
 
-    //    private List<Map<String, Object>> newsResult;
-    private List<Map<String, Object>> firmResult;
-    private List<Map<String, Object>> lawyerResult;
-    private List<Map<String, Object>> judgementResult;
-    private List<Map<String, Object>> counselingResult;
-    private List<Map<String, Object>> lawResult;
+    private List<Map<String, Object>> newsResult = new ArrayList<>();
+    private List<Map<String, Object>> firmResult = new ArrayList<>();
+    private List<Map<String, Object>> lawyerResult = new ArrayList<>();
+    private List<Map<String, Object>> judgementResult = new ArrayList<>();
+    private List<Map<String, Object>> counselingResult = new ArrayList<>();
+    private List<Map<String, Object>> lawResult = new ArrayList<>();
 
     public String getKey() {
         return key;
@@ -57,11 +58,11 @@ public class MainSearchAction extends SearchBaseAction  {
         this.result = result;
     }
 
-    //news
-//    protected List<Map<String, Object>> searchNews(){
-//
-//        return newsResult;
-//    }
+//    news
+    protected List<Map<String, Object>> getNewsResult(){
+
+        return newsResult;
+    }
 
     //law
     protected List<Map<String, Object>> getLaw(){
@@ -127,37 +128,44 @@ public class MainSearchAction extends SearchBaseAction  {
 //            getLawyer.start();
             getLawyer();
 //            while (getLawyer.isAlive()) { }
-            if (lawyerResult == null)
+            if (lawyerResult.size() == 0)
                 result.put("lawyer", "0");
             else result.put("lawyer", lawyerResult);
         }else if (getPageType().equals("1")){
 //            getCounseling.start();
             getCounseling();
 //            while (getCounseling.isAlive()) { }
-            if (counselingResult == null)
+            if (counselingResult.size() == 0)
                 result.put("counseling", "1");
             else result.put("counseling", counselingResult);
         } else if (getPageType().equals("2")) {
 //            getLaw.start();
             getLaw();
 //            while (getLaw.isAlive()){ }
-            if (lawResult == null )
+            if (lawResult.size() == 0)
                 result.put("law", "2");
             else result.put("law", lawResult);
         } else if (getPageType().equals("3")) {
 //            getFirm.start();
             getFirm();
 //            while (getFirm.isAlive()) { }
-            if (firmResult == null)
+            if (firmResult.size() == 0)
                 result.put("firm", "3");
             else result.put("firm", firmResult);
         }else if(getPageType().equals("4")) {
 //            getJudgement.start();
             getJudgement();
 //            while (getJudgement.isAlive()) { }
-            if (judgementResult == null)
+            if (judgementResult.size() == 0)
                 result.put("judgement", "4");
             else result.put("judgement", judgementResult);
+        }else if(getPageType().equals("4")) {
+//            getJudgement.start();
+//            getNewsResult();
+//            while (getJudgement.isAlive()) { }
+            if (newsResult.size() == 0)
+                result.put("news", "5");
+            else result.put("news", newsResult);
         }
         return SUCCESS;
     }
