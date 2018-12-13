@@ -145,11 +145,10 @@ public class SearchBaseAction extends ActionSupport{
             }catch(Exception e){
 
             }
-
-            cursor = collection.find(new Document("$and",condition)).limit(15).iterator();
+            cursor = collection.find(new Document("$and",condition)).projection(new Document("j_rank", 0)).limit(15).iterator();
         }
         else{
-            cursor = collection.find(new Document("_id",keyWord)).limit(1).iterator();
+            cursor = collection.find(new Document("_id",keyWord)).projection(new Document("j_rank", 0)).limit(1).iterator();
         }
         while (cursor.hasNext()) {
             Map<String, Object> map = new HashMap<String, Object>();
@@ -180,7 +179,8 @@ public class SearchBaseAction extends ActionSupport{
                             .append("job",1)
                             .append("company",1)
                             .append("major",1)
-                            .append("price",1)).sort(new Document("comment",-1)).limit(15).iterator();
+                            .append("price",1)
+                            .append("comment",1)).sort(new Document("comment",-1)).limit(15).iterator();
         }else if(searchType.equals("1")) {//PK搜寻
             cursor = collection.find(new Document("_id",new ObjectId(keyWord))).limit(1).iterator();
         }else if(searchType.equals("2")) {//PK搜寻（律师详情）
@@ -215,7 +215,8 @@ public class SearchBaseAction extends ActionSupport{
                             .append("job",1)
                             .append("company",1)
                             .append("major",1)
-                            .append("price",1)).sort(new Document("comment",-1)).limit(15).iterator();
+                            .append("price",1)
+                            .append("comment",1)).sort(new Document("comment",-1)).limit(15).iterator();
         }
         while (cursor.hasNext()) {
             Map<String, Object> map = new HashMap<String, Object>();
@@ -342,7 +343,7 @@ public class SearchBaseAction extends ActionSupport{
             cursor = collection.find(new Document("$or",condition))
                     .projection(new Document("_id", 1)
                     .append("lawyer",1)
-                    .append("create_tome",1)
+                    .append("create_time",1)
                     .append("view_count", 1)
                     .append("content", new Document("$slice",1)))
                     .sort(new Document("view_count",-1)).limit(15).iterator();
@@ -352,8 +353,6 @@ public class SearchBaseAction extends ActionSupport{
                             .append("lawyer",1)
                             .append("create_time",1)
                             .append("view_count", 1)
-                            .append("state",1)
-                            .append("comment",1)
                             .append("content", new Document("$slice",1)))
                             .sort(new Document("view_count",-1)).limit(15).iterator();
         }else if(searchType.equals("1")){//新增
@@ -370,17 +369,34 @@ public class SearchBaseAction extends ActionSupport{
             cursor = collection.find(new Document("id", text)).limit(1).iterator();
 
             //更新律师的counselingList
-            Document lawyer = collection_l.find(new Document("_id", new ObjectId(counseling.getString("lawyer")))).limit(1).iterator().next();
-            List<ObjectId> counselinglst = (List<ObjectId>)lawyer.get("coundeling_list");
+            Document lawyer = collection_l.find(new Document("_id", counseling.getObjectId("lawyer"))).limit(1).iterator().next();
+            List<ObjectId> counselinglst = (List<ObjectId>)lawyer.get("counseling_list");
             counselinglst.add(collection.find(new Document("id", text)).limit(1).iterator().next().getObjectId("_id"));
             lawyer.put("counseling_list", counselinglst);
-            collection_l.updateOne(new Document("_id", new ObjectId(counseling.getString("lawyer"))), lawyer);
+            collection_l.updateOne(new Document("_id", counseling.getObjectId("lawyer")), new Document("$set", lawyer));
 
         }else if(searchType.equals("2")){//取得某用户的所有提问
-            cursor = collection.find(new Document("questioner", new ObjectId(keyWord))).projection(new Document("questioner",0)).limit(15).iterator();
+            cursor = collection.find(new Document("questioner", new ObjectId(keyWord)))
+                    .sort(new Document("state",1)).projection(new Document("questioner",0)).limit(15).iterator();
         }else if(searchType.equals("3")){//取得某律师的所有回答
+            cursor = collection.find(new Document("lawyer", new ObjectId(keyWord)))
+                    .projection(new Document("_id", 1)
+                    .append("lawyer",1)
+                    .append("create_time",1)
+                    .append("view_count", 1)
+                    .append("state",1)
+                    .append("content", new Document("$slice",1)))
+                    .sort(new Document("state",-1).append("view_count",-1)).limit(15).iterator();
+        }else if(searchType.equals("5")){//取得某律师的所有回答(律师视角)
             MongoCursor<Document> lawyerCursor1 = collection_l.find(new Document("reg_id",new ObjectId(keyWord))).iterator();
-            cursor = collection.find(new Document("lawyer", lawyerCursor1.next().getObjectId("_id"))).projection(new Document("questioner",0)).limit(15).iterator();
+            cursor = collection.find(new Document("lawyer", lawyerCursor1.next().getObjectId("_id")))
+                    .projection(new Document("_id", 1)
+                            .append("lawyer",1)
+                            .append("create_time",1)
+                            .append("view_count", 1)
+                            .append("state",1)
+                            .append("content", new Document("$slice",1)))
+                    .sort(new Document("state",1)).limit(15).iterator();
         }else if(searchType.equals("4")){//以pk搜寻
             cursor = collection.find(new Document("_id", new ObjectId(keyWord))).projection(new Document("questioner",0)).limit(1).iterator();
         }else{
