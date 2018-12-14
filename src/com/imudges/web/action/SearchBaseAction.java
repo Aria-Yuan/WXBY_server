@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.mongodb.client.model.Projections.fields;
@@ -145,10 +146,19 @@ public class SearchBaseAction extends ActionSupport{
             }catch(Exception e){
 
             }
-            cursor = collection.find(new Document("$and",condition)).projection(new Document("j_rank", 0)).limit(15).iterator();
+            cursor = collection.find(new Document("$and",condition))
+                    .projection(new Document("j_id", 1)
+                    .append("j_reason", 1)
+                    .append("_id", 1)
+                    .append("j_content", 1)).sort(new Document("j_rank."+con_json.getString("keyword"), -1).append("view_count",-1)).limit(15).iterator();
+        }else if(searchType == "1"){//PK搜寻
+            Document old = collection.find(new Document("_id",keyWord)).first();
+            collection.updateOne(old,new Document("view_count",old.getInteger("view_copunt")+1));
+            cursor = collection.find(new Document("_id",keyWord))
+                    .projection(new Document("j_rank", 0)).limit(1).iterator();
         }
         else{
-            cursor = collection.find(new Document("_id",keyWord)).projection(new Document("j_rank", 0)).limit(1).iterator();
+            cursor = collection.find().projection(new Document("j_rank", 0)).limit(15).iterator();
         }
         while (cursor.hasNext()) {
             Map<String, Object> map = new HashMap<String, Object>();
@@ -459,12 +469,13 @@ public class SearchBaseAction extends ActionSupport{
     }
 
     protected Map<String, Object> getCaseConsultResult(String id){
-//        id = "201810311101380970557865";
+//        String id = "201811011156180970557865";
         System.out.println(id);
         Map<String, Object> result = new HashMap<>();
         MongoDBUtil mongoDb = new MongoDBUtil("wxby");
         MongoCollection<Document> collection = mongoDb.getCollection("case_consult");
         MongoCollection<Document> jCollection = mongoDb.getCollection("judgement");
+        MongoCollection<Document> lCollection = mongoDb.getCollection("law");
 
         MongoCursor<Document> a = collection.find(new Document("id", id)).iterator();
         Document res = a.next();
@@ -525,13 +536,59 @@ public class SearchBaseAction extends ActionSupport{
                     tempData.put("j_id", temp.get("j_id"));
                     tempData.put("j_date", temp.get("j_date"));
                     tempData.put("j_reason", temp.get("j_reason"));
+                    tempData.put("j_content", temp.get("j_content"));
+                    tempData.put("j_laws", temp.get("j_laws"));
                     tempData.put("_id", temp.get("_id").toString());
                     similars.add(tempData);
-                    System.out.println(tempData);
                 }
                 result.put("similar", similars);
 
-                System.out.println(res.get("result").toString() + "**********************************");
+                //处理法条
+                List<Document> lawLst = new ArrayList<>();
+                List<String> lawIdLst = new ArrayList<>();
+                for(Document judgement : similars){
+                    String s = judgement.getString("j_laws");
+                    System.out.println(s);
+                    while(s.contains("。")){
+                        Pattern p = Pattern.compile("條.*?。", Pattern.DOTALL);
+                        Matcher matcher = p.matcher(s);
+
+                        s = matcher.replaceAll("條");
+                    }
+
+                    Pattern p = Pattern.compile("第[^0-9-]條", Pattern.DOTALL);
+                    Matcher matcher = p.matcher(s);
+                    s = matcher.replaceAll("");
+
+                    System.out.print(s);
+
+                    String[] aaa = s.trim().split("條\n");
+                    Document condition = new Document();
+                    for(int i= 0; i < aaa.length; i++){
+                        if(aaa[i].contains("\n")){
+                            System.out.print(aaa[i]);
+                            condition.clear();
+                            condition.append("name",aaa[i].split("\n")[0]);
+                        }
+                        p = Pattern.compile("[^0-9-]", Pattern.DOTALL);
+                        matcher = p.matcher(aaa[i]);
+                        p = Pattern.compile("第[\\s*]" + matcher.replaceAll("") + "\\s*條$", Pattern.MULTILINE);
+                        condition.append("article", p);
+
+                        MongoCursor<Document> cursorl = lCollection.find(condition).iterator();
+                        while (cursorl.hasNext()){
+                            Document temp = cursorl.next();
+                            if(!lawIdLst.contains(temp.getObjectId("_id").toString())){
+                                lawIdLst.add(temp.getObjectId("_id").toString());
+                                lawLst.add(temp);
+                            }
+                        }
+
+                    }
+                }
+                result.put("refer", lawLst);
+
+//                System.out.println(res.get("result").toString() + "**********************************");
                 result.put("result", res.get("result"));
             }
 //            result.put("neighbor", res.get("neighborlst"));
@@ -611,6 +668,8 @@ public class SearchBaseAction extends ActionSupport{
         MongoDBUtil mongoDb = new MongoDBUtil("wxby");
         MongoCollection<Document> collection = mongoDb.getCollection("judgement");
 
+        Document old = collection.find(new Document("id",id)).first();
+        collection.updateOne(old,new Document("$set",new Document("view_count",old.getInteger("view_count")+1)));
         MongoCursor<Document> cursor = collection.find(new Document("id", id)).iterator();
 
         int state = 0;
