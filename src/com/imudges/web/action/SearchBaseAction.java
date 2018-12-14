@@ -580,6 +580,7 @@ public class SearchBaseAction extends ActionSupport{
                             Document temp = cursorl.next();
                             if(!lawIdLst.contains(temp.getObjectId("_id").toString())){
                                 lawIdLst.add(temp.getObjectId("_id").toString());
+                                temp.append("_id",temp.getObjectId("_id").toString());
                                 lawLst.add(temp);
                             }
                         }
