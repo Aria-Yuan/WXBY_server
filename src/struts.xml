@@ -85,6 +85,30 @@
             </result>
         </action>
 
+        <action name="submitQuickConsult" class="com.imudges.web.action.QuickConsultAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
+
+        <action name="quickConsultReply" class="com.imudges.web.action.QuickConsultReplyAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
+
+        <action name="deleteQuickConsultComment" class="com.imudges.web.action.DeleteQuickConsultCommentAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
+
+        <action name="getQuickConsultReplyList" class="com.imudges.web.action.QuickConsultReplyListAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
+
         <action name="getCaseResult" class="com.imudges.web.action.PredictAction">
             <result name="success" type="json">
                 <param name="root">result</param>

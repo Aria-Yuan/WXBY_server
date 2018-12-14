@@ -4,6 +4,7 @@ import com.circle.web.database.database.MongoDBUtil;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.opensymphony.xwork2.ActionSupport;
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
@@ -127,6 +128,9 @@ public class BaseConsultAction extends ActionSupport {
 
 
         if (cursor.hasNext()){
+
+            cursor.next().put("view_count", cursor.next().getInteger("view_count", 0) + 1);
+
             int index = 0;
 
             result.put("state", 1);
@@ -147,10 +151,8 @@ public class BaseConsultAction extends ActionSupport {
                 if(!reply.get("replies").equals(new ArrayList<>())) {
                     List<String> tp = new ArrayList<>();
                     for (ObjectId oros : reply.get("replies", new ArrayList<ObjectId>())) {
-
                         tp.add(oros.toString());
                         count++;
-
                     }
                     reply.put("replies", tp);
                 }
@@ -249,13 +251,6 @@ public class BaseConsultAction extends ActionSupport {
             String condition = "lawyer_reply." + parent_index;
             System.out.println(collection.updateOne(new Document("_id", new ObjectId(quick_id)),new Document("$set", new Document(condition,parentReply))));
             result.put("state", 1);
-//            for (Document comment: comments){
-//                if (comment.get("_id").toString().equals(parentId)){
-//                    comment.put("")
-//                }
-//                System.out.println(collection.updateOne(new Document("_id", new ObjectId(quick_id)), new Document("$set", new Document("lawyer_reply.3",new Document("3", newComment)) )));
-//            }
-
         }else{
             result.put("state", 1);
         }
