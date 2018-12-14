@@ -468,8 +468,8 @@ public class SearchBaseAction extends ActionSupport{
         return result;
     }
 
-    protected Map<String, Object> getCaseConsultResult(String id1){
-        String id = "201811011156180970557865";
+    protected Map<String, Object> getCaseConsultResult(String id){
+//        String id = "201811011156180970557865";
         System.out.println(id);
         Map<String, Object> result = new HashMap<>();
         MongoDBUtil mongoDb = new MongoDBUtil("wxby");
