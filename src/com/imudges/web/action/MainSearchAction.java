@@ -25,14 +25,14 @@ public class MainSearchAction extends SearchBaseAction  {
 //    private Thread getJudgement = new Thread(gj);
 //    private Thread getCounseling = new Thread(gc);
 
-    private Map<String,Object> result = new HashMap<>();
+    private List<Map<String,Object>> result;
 
-    private List<Map<String, Object>> newsResult = new ArrayList<>();
-    private List<Map<String, Object>> firmResult = new ArrayList<>();
-    private List<Map<String, Object>> lawyerResult = new ArrayList<>();
-    private List<Map<String, Object>> judgementResult = new ArrayList<>();
-    private List<Map<String, Object>> counselingResult = new ArrayList<>();
-    private List<Map<String, Object>> lawResult = new ArrayList<>();
+//    private List<Map<String, Object>> newsResult = new ArrayList<>();
+//    private List<Map<String, Object>> firmResult = new ArrayList<>();
+//    private List<Map<String, Object>> lawyerResult = new ArrayList<>();
+//    private List<Map<String, Object>> judgementResult = new ArrayList<>();
+//    private List<Map<String, Object>> counselingResult = new ArrayList<>();
+//    private List<Map<String, Object>> lawResult = new ArrayList<>();
 
     public String getKey() {
         return key;
@@ -50,77 +50,142 @@ public class MainSearchAction extends SearchBaseAction  {
         this.pageType = pageType;
     }
 
-    public Map<String, Object> getResult() {
+    public List<Map<String, Object>> getResult() {
         return result;
     }
 
-    public void setResult(Map<String, Object> result) {
+    public void setResult(List<Map<String, Object>> result) {
         this.result = result;
     }
 
-//    news
-    protected List<Map<String, Object>> getNewsResult(){
+////    news
+//    protected List<Map<String, Object>> getNewsResult(){
+//
+//        return newsResult;
+//    }
+//
+//    //law
+//    protected List<Map<String, Object>> getLaw(){
+//        try {
+//            Document condition = new Document();
+//            condition.append("keyword",key);
+//            condition.append("item", 0);
+//            lawResult = getLawResult(condition.toJson(), "0");
+//            condition.append("item", 1);
+//            lawResult.addAll(getLawResult( condition.toJson(), "0"));
+//            System.out.println(lawResult.size());
+//        }catch (Exception e){
+//        }
+//
+//        return lawResult;
+//    }
+//
+//    //lawyer
+//    protected List<Map<String, Object>> getLawyer(){
+//        try {
+//            lawyerResult = getLawyerResult(key, "0");
+//        }catch (Exception e){
+//        }
+//
+//        return lawyerResult;
+//    }
+//
+//    //case
+//    protected List<Map<String, Object>> getJudgement(){
+//        try {
+//            Document condition = new Document();
+//            condition.append("keyword",key);
+//            judgementResult = getJudgementResult(condition.toJson(), "0");
+//        }catch (Exception e){
+//        }
+//
+//        return judgementResult;
+//    }
+//
+//    //firm
+//    protected List<Map<String, Object>> getFirm() {
+//        try {
+//            firmResult = getFirmResult(key, "0");
+//        }catch (Exception e){
+//        }
+//
+//        return firmResult;
+//    }
+//
+//
+//    //counseling
+//    protected List<Map<String, Object>> getCounseling() {
+//        try {
+//            counselingResult = getCounselingResult(key, "0");
+//        }catch (Exception e){
+//        }
+//
+//        return counselingResult;
+//    }
 
-        return newsResult;
+    //    news
+    protected void getNewsResult(){
+
+//        return newsResult;
     }
 
     //law
-    protected List<Map<String, Object>> getLaw(){
+    protected void getLaw(){
         try {
             Document condition = new Document();
             condition.append("keyword",key);
             condition.append("item", 0);
-            lawResult = getLawResult(condition.toJson(), "0");
+            result = getLawResult(condition.toJson(), "0");
             condition.append("item", 1);
-            lawResult.addAll(getLawResult( condition.toJson(), "0"));
-            System.out.println(lawResult.size());
+            result.addAll(getLawResult( condition.toJson(), "0"));
+//            System.out.println(lawResult.size());
         }catch (Exception e){
         }
 
-        return lawResult;
+//        return lawResult;
     }
 
     //lawyer
-    protected List<Map<String, Object>> getLawyer(){
+    protected void getLawyer(){
         try {
-            lawyerResult = getLawyerResult(key, "0");
+            result = getLawyerResult(key, "0");
         }catch (Exception e){
         }
 
-        return lawyerResult;
+//        return lawyerResult;
     }
 
     //case
-    protected List<Map<String, Object>> getJudgement(){
+    protected void getJudgement(){
         try {
             Document condition = new Document();
             condition.append("keyword",key);
-            judgementResult = getJudgementResult(condition.toJson(), "0");
+            result = getJudgementResult(condition.toJson(), "0");
         }catch (Exception e){
         }
 
-        return judgementResult;
+//        return judgementResult;
     }
 
     //firm
-    protected List<Map<String, Object>> getFirm() {
+    protected void getFirm() {
         try {
-            firmResult = getFirmResult(key, "0");
+            result = getFirmResult(key, "0");
         }catch (Exception e){
         }
 
-        return firmResult;
+//        return firmResult;
     }
 
 
     //counseling
-    protected List<Map<String, Object>> getCounseling() {
+    protected void getCounseling() {
         try {
-            counselingResult = getCounselingResult(key, "0");
+            result = getCounselingResult(key, "0");
         }catch (Exception e){
         }
 
-        return counselingResult;
+//        return counselingResult;
     }
 
     public String execute() throws Exception{
@@ -128,45 +193,46 @@ public class MainSearchAction extends SearchBaseAction  {
 //            getLawyer.start();
             getLawyer();
 //            while (getLawyer.isAlive()) { }
-            if (lawyerResult.size() == 0)
-                result.put("lawyer", "0");
-            else result.put("lawyer", lawyerResult);
+//            if (lawyerResult.size() == 0)
+//                result.put("lawyer", "0");
+//            else result.put("lawyer", lawyerResult);
         }else if (getPageType().equals("1")){
 //            getCounseling.start();
             getCounseling();
 //            while (getCounseling.isAlive()) { }
-            if (counselingResult.size() == 0)
-                result.put("counseling", "1");
-            else result.put("counseling", counselingResult);
+//            if (counselingResult.size() == 0)
+//                result.put("counseling", "1");
+//            else result.put("counseling", counselingResult);
         } else if (getPageType().equals("2")) {
 //            getLaw.start();
             getLaw();
 //            while (getLaw.isAlive()){ }
-            if (lawResult.size() == 0)
-                result.put("law", "2");
-            else result.put("law", lawResult);
+//            if (lawResult.size() == 0)
+//                result.put("law", "2");
+//            else result.put("law", lawResult);
         } else if (getPageType().equals("3")) {
 //            getFirm.start();
             getFirm();
 //            while (getFirm.isAlive()) { }
-            if (firmResult.size() == 0)
-                result.put("firm", "3");
-            else result.put("firm", firmResult);
+//            if (firmResult.size() == 0)
+//                result.put("firm", "3");
+//            else result.put("firm", firmResult);
         }else if(getPageType().equals("4")) {
 //            getJudgement.start();
             getJudgement();
 //            while (getJudgement.isAlive()) { }
-            if (judgementResult.size() == 0)
-                result.put("judgement", "4");
-            else result.put("judgement", judgementResult);
+//            if (judgementResult.size() == 0)
+//                result.put("judgement", "4");
+//            else result.put("judgement", judgementResult);
         }else if(getPageType().equals("4")) {
 //            getJudgement.start();
-//            getNewsResult();
+            getNewsResult();
 //            while (getJudgement.isAlive()) { }
-            if (newsResult.size() == 0)
-                result.put("news", "5");
-            else result.put("news", newsResult);
+//            if (newsResult.size() == 0)
+//                result.put("news", "5");
+//            else result.put("news", newsResult);
         }
+        System.out.println(result);
         return SUCCESS;
     }
 

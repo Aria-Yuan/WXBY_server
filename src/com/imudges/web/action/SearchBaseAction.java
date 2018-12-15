@@ -692,6 +692,36 @@ public class SearchBaseAction extends ActionSupport{
 
     }
 
+    protected List<Map<String, Object>> getNewsResult(String keyWord, String searchType){
+        List<Map<String, Object>> result = new ArrayList<>();
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        MongoCollection<Document> collection = mongoDb.getCollection("hotnews");
+        MongoCursor<Document> cursor;
+        if(searchType.equals("0")){//关键字搜寻
+            List<Document> condition = new ArrayList<>();
+            //设置正则表达
+            Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
+            condition.add(new Document("title" , regular));
+            condition.add(new Document("article" , regular));
+            cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
+//        }else if(searchType.equals("1")){//按日期搜寻
+//            Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
+//            cursor = collection.find(new Document("firm_addr",regular)).limit(15).iterator();
+        } else{
+            cursor = collection.find().limit(10).iterator();
+        }
+        while (cursor.hasNext()) {
+            Map<String, Object> map = new HashMap<String, Object>();
+            Document a = cursor.next();
+            a.put("_id", a.getObjectId("_id").toString());
+            map.putAll(a);
+            result.add(map);
+        }
+        cursor.close();
+        mongoDb.close();
+        return result;
+    }
+
     protected Map<String, Object> loginAndRegister(String tp, String username, String password){
 
         int type = Integer.valueOf(tp);
