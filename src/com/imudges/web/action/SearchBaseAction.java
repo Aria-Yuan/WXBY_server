@@ -750,7 +750,7 @@ public class SearchBaseAction extends ActionSupport{
         MongoDBUtil mongoDb = new MongoDBUtil("wxby");
         MongoCollection<Document> collection = mongoDb.getCollection("hotnews");
         MongoCursor<Document> cursor;
-        if(searchType.equals("0")){//关键字搜寻
+        if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
             List<Document> condition = new ArrayList<>();
             //设置正则表达
             Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
@@ -760,7 +760,10 @@ public class SearchBaseAction extends ActionSupport{
 //        }else if(searchType.equals("1")){//按日期搜寻
 //            Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
 //            cursor = collection.find(new Document("firm_addr",regular)).limit(15).iterator();
-        } else{
+        }else if(searchType.equals("1")){//pk搜寻
+            cursor = collection.find(new Document("_id",new ObjectId(keyWord))).limit(1).iterator();
+        }
+        else{
             cursor = collection.find().limit(10).iterator();
         }
         while (cursor.hasNext()) {
