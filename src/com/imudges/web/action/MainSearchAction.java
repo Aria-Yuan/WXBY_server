@@ -125,7 +125,15 @@ public class MainSearchAction extends SearchBaseAction  {
 
     //    news
     protected void getNewsResult(){
-
+        result = new ArrayList<>();
+        Map<String, Object> news = new HashMap<>();
+        news.put("hotNews", getNewsKeyword(key, "0"));
+        Map<String, Object> comments = new HashMap<>();
+        comments.put("comment", getCommentKeyword(key, "0"));
+        result.add(news);
+        result.add(comments);
+//        System.out.println("1111111111111111111111111111111111111");
+//        System.out.println(result);
 //        return newsResult;
     }
 
@@ -224,7 +232,7 @@ public class MainSearchAction extends SearchBaseAction  {
 //            if (judgementResult.size() == 0)
 //                result.put("judgement", "4");
 //            else result.put("judgement", judgementResult);
-        }else if(getPageType().equals("4")) {
+        }else if(getPageType().equals("5")) {
 //            getJudgement.start();
             getNewsResult();
 //            while (getJudgement.isAlive()) { }
@@ -232,7 +240,7 @@ public class MainSearchAction extends SearchBaseAction  {
 //                result.put("news", "5");
 //            else result.put("news", newsResult);
         }
-        System.out.println(result);
+//        System.out.println(result);
         return SUCCESS;
     }
 
