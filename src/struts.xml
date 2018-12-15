@@ -73,6 +73,13 @@
             </result>
         </action>
 
+        <action name="userCaseConsultResult" class="com.imudges.web.action.SearchUserCaseAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
+
+
         <action name="judgementConsult" class="com.imudges.web.action.JudgementConsultAction">
             <result name="success" type="json">
                 <param name="root">result</param>
