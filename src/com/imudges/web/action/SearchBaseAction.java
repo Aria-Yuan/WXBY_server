@@ -644,6 +644,7 @@ public class SearchBaseAction extends ActionSupport{
 
 //                System.out.println(res.get("result").toString() + "**********************************");
                 result.put("result", res.get("result"));
+                result.put("content", res.getString("content"));
             }
 //            result.put("neighbor", res.get("neighborlst"));
 //        }
@@ -756,15 +757,54 @@ public class SearchBaseAction extends ActionSupport{
             Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
             condition.add(new Document("title" , regular));
             condition.add(new Document("article" , regular));
-            cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
+            cursor = collection.find(new Document("$or",condition))
+                    .sort(new Document("_id",-1)).limit(15).iterator();
 //        }else if(searchType.equals("1")){//按日期搜寻
 //            Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
 //            cursor = collection.find(new Document("firm_addr",regular)).limit(15).iterator();
         }else if(searchType.equals("1")){//pk搜寻
-            cursor = collection.find(new Document("_id",new ObjectId(keyWord))).limit(1).iterator();
+            cursor = collection.find(new Document("_id",new ObjectId(keyWord)))
+                    .sort(new Document("_id",-1)).limit(1).iterator();
         }
         else{
-            cursor = collection.find().limit(10).iterator();
+            cursor = collection.find()
+                    .sort(new Document("_id",-1)).limit(10).iterator();
+        }
+        while (cursor.hasNext()) {
+            Map<String, Object> map = new HashMap<String, Object>();
+            Document a = cursor.next();
+            a.put("_id", a.getObjectId("_id").toString());
+            map.putAll(a);
+            result.add(map);
+        }
+        cursor.close();
+        mongoDb.close();
+        return result;
+    }
+
+    protected List<Map<String, Object>> getCommentsResult(String keyWord, String searchType){
+        List<Map<String, Object>> result = new ArrayList<>();
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        MongoCollection<Document> collection = mongoDb.getCollection("comment");
+        MongoCursor<Document> cursor;
+        if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
+            List<Document> condition = new ArrayList<>();
+            //设置正则表达
+            Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
+            condition.add(new Document("title" , regular));
+            condition.add(new Document("article" , regular));
+            cursor = collection.find(new Document("$or",condition))
+                    .sort(new Document("_id",-1)).limit(15).iterator();
+//        }else if(searchType.equals("1")){//按日期搜寻
+//            Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
+//            cursor = collection.find(new Document("firm_addr",regular)).limit(15).iterator();
+        }else if(searchType.equals("1")){//pk搜寻
+            cursor = collection.find(new Document("_id",new ObjectId(keyWord)))
+                    .sort(new Document("_id",-1)).limit(1).iterator();
+        }
+        else{
+            cursor = collection.find()
+                    .sort(new Document("_id",-1)).limit(10).iterator();
         }
         while (cursor.hasNext()) {
             Map<String, Object> map = new HashMap<String, Object>();
