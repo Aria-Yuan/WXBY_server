@@ -125,7 +125,7 @@ def str_replace(str_source, char, *words):
 
 
 def seg_words(sentence):
-    stopwords = {}.fromkeys([ line.rstrip() for line in open('D:/Program Files/WeChat/WeChat Files/zy-hahu/Files/stopword.txt') ])
+    stopwords = {}.fromkeys([ line.rstrip() for line in open('D:/stopword.txt') ])
     segs = jieba.cut(sentence, cut_all=False)  # 默认是精确模式
     return " ".join(segs)     # 分词，然后将结果列表形式转换为字符串
 
@@ -160,7 +160,7 @@ condition = {'id': a}
 string = case_set.find_one(condition).get("content")
 
 
-matrix = pd.read_csv("D:/Program Files/WeChat/WeChat Files/zy-hahu/Files/matrix_column.csv")
+matrix = pd.read_csv("D:/matrix_column.csv")
 matrix.loc[0] = random.randint(0,0)
 
 
@@ -185,7 +185,7 @@ predict_x
 # In[190]:
 
 
-gbm_martix = pd.read_csv("D:/Program Files/WeChat/WeChat Files/zy-hahu/Files/matrix1500.csv")
+gbm_martix = pd.read_csv("D:/matrix1500.csv")
 df = gbm_martix.dropna()
 X = df.drop(['result'], axis=1)
 Y = df['result']

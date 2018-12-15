@@ -146,11 +146,40 @@ public class SearchBaseAction extends ActionSupport{
             }catch(Exception e){
 
             }
-            cursor = collection.find(new Document("$and",condition))
-                    .projection(new Document("j_id", 1)
-                    .append("j_reason", 1)
-                    .append("_id", 1)
-                    .append("j_content", 1)).sort(new Document("j_rank."+con_json.getString("keyword"), -1).append("view_count",-1)).limit(15).iterator();
+
+            //judge
+            try{
+                String judge = con_json.getString("judge");
+                String regex = "";
+
+                for (String a : judge.split("\\s")){
+                    regex += a + "\\s*";
+                }
+                Pattern p = Pattern.compile("法\\s*官\\s*" + regex, Pattern.MULTILINE);
+                condition.add(new Document("j_content", p));
+
+            }catch(Exception e){
+
+            }
+
+            try{
+                cursor = collection.find(new Document("$and",condition))
+                        .projection(new Document("j_id", 1)
+                                .append("j_reason", 1)
+                                .append("_id", 1)
+                                .append("j_content", 1))
+                        .sort(new Document("j_rank."+con_json.getString("keyword"), -1).append("view_count",-1))
+                        .limit(15).iterator();
+            }catch(Exception e){
+                cursor = collection.find(new Document("$and",condition))
+                        .projection(new Document("j_id", 1)
+                                .append("j_reason", 1)
+                                .append("_id", 1)
+                                .append("j_content", 1))
+                        .sort(new Document("view_count",-1))
+                        .limit(15).iterator();
+            }
+
         }else if(searchType == "1"){//PK搜寻
             Document old = collection.find(new Document("_id",keyWord)).first();
             collection.updateOne(old,new Document("view_count",old.getInteger("view_copunt")+1));
@@ -474,7 +503,11 @@ public class SearchBaseAction extends ActionSupport{
         MongoDBUtil mongoDb = new MongoDBUtil("wxby");
         MongoCollection<Document> collection = mongoDb.getCollection("case_consult");
 
-        MongoCursor<Document> cursor = collection.find(new Document("owner", id)).iterator();
+        MongoCursor<Document> cursor = collection.find(new Document("owner", new ObjectId(id)))
+                .projection(new Document("id", 1)
+                .append("content", 1)
+                .append("state", 1)
+                .append("create_time", 1)).iterator();
 
         while (cursor.hasNext()) {
             Map<String, Object> map = new HashMap<String, Object>();
