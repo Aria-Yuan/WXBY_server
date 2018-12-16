@@ -387,15 +387,35 @@ public class SearchBaseAction extends ActionSupport{
                     .append("state",1)
                     .append("content", new Document("$slice",1)))
                     .sort(new Document("view_count",-1)).limit(15).iterator();
-        }else if(searchType.equals("0")){//推荐列表
-            cursor = collection.find()
-                    .projection(new Document("_id", 1)
-                            .append("lawyer",1)
-                            .append("create_time",1)
-                            .append("view_count", 1)
-                            .append("state",1)
-                            .append("content", new Document("$slice",1)))
-                            .sort(new Document("view_count",-1)).limit(15).iterator();
+        }else if(searchType.charAt(0) == '0'){//推荐列表
+            if(searchType.charAt(1) == '0'){
+                cursor = collection.find()
+                        .projection(new Document("_id", 1)
+                                .append("lawyer",1)
+                                .append("create_time",1)
+                                .append("view_count", 1)
+                                .append("state",1)
+                                .append("content", new Document("$slice",1))).limit(15).iterator();
+//                        .sort(new Document("view_count",-1))
+            }else if(searchType.charAt(1) == '1'){
+                cursor = collection.find()
+                        .projection(new Document("_id", 1)
+                                .append("lawyer",1)
+                                .append("create_time",1)
+                                .append("view_count", 1)
+                                .append("state",1)
+                                .append("content", new Document("$slice",1)))
+                        .sort(new Document("_id",-1)).limit(15).iterator();
+            }else{
+                cursor = collection.find()
+                        .projection(new Document("_id", 1)
+                                .append("lawyer",1)
+                                .append("create_time",1)
+                                .append("view_count", 1)
+                                .append("state",1)
+                                .append("content", new Document("$slice",1)))
+                        .sort(new Document("view_count",-1).append("_id",-1)).limit(15).iterator();
+            }
         }else if(searchType.equals("1")){//新增
             Document counseling = Document.parse(keyWord);
             counseling.append("questioner",new ObjectId(counseling.getString("questioner")));
@@ -445,7 +465,7 @@ public class SearchBaseAction extends ActionSupport{
             cursor = collection.find(new Document("_id", new ObjectId(keyWord)))
                     .projection(new Document("questioner",0)).limit(1).iterator();
         }else{
-            cursor = collection.find().limit(15).iterator();
+            cursor = collection.find().projection(new Document("questioner",0)).limit(15).iterator();
         }
         while (cursor.hasNext()) {
             Map<String, Object> map = new HashMap<String, Object>();
