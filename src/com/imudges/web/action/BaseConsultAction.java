@@ -126,10 +126,13 @@ public class BaseConsultAction extends ActionSupport {
         MongoCollection<Document> collection = mongoDb.getCollection("quick_response");
         MongoCursor<Document> cursor = collection.find(new Document("_id", new ObjectId(id))).iterator();
 
+        collection.updateOne(new Document("_id", new ObjectId(id)),
+                new Document("$set", new Document("view_count",
+                        cursor.next().getInteger("view_count", 0) + 1)));
+
+        cursor = collection.find(new Document("_id", new ObjectId(id))).iterator();
 
         if (cursor.hasNext()){
-
-            cursor.next().put("view_count", cursor.next().getInteger("view_count", 0) + 1);
 
             int index = 0;
 
