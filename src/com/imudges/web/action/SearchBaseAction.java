@@ -181,9 +181,9 @@ public class SearchBaseAction extends ActionSupport{
             }
 
         }else if(searchType == "1"){//PK搜寻
-            Document old = collection.find(new Document("_id",keyWord)).first();
+            Document old = collection.find(new Document("_id",new ObjectId(keyWord))).first();
             collection.updateOne(old,new Document("view_count",old.getInteger("view_copunt")+1));
-            cursor = collection.find(new Document("_id",keyWord))
+            cursor = collection.find(new Document("_id",new ObjectId(keyWord)))
                     .projection(new Document("j_rank", 0)).limit(1).iterator();
         }
         else{
@@ -438,6 +438,8 @@ public class SearchBaseAction extends ActionSupport{
                             .append("content", new Document("$slice",1)))
                     .sort(new Document("state",1).append("time",-1)).limit(15).iterator();
         }else if(searchType.equals("4")){//以pk搜寻
+            Document old = collection.find(new Document("_id",new ObjectId(keyWord))).first();
+            collection.updateOne(old,new Document("view_count",old.getInteger("view_copunt")+1));
             cursor = collection.find(new Document("_id", new ObjectId(keyWord))).projection(new Document("questioner",0)).limit(1).iterator();
         }else{
             cursor = collection.find().limit(15).iterator();
