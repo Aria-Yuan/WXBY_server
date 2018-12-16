@@ -189,7 +189,7 @@ public class MainSearchAction extends SearchBaseAction  {
     //counseling
     protected void getCounseling() {
         try {
-            result = getCounselingResult(key, "0");
+            result = getQuickConsultList(key, "0");
         }catch (Exception e){
         }
 

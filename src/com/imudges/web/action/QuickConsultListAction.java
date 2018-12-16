@@ -9,7 +9,7 @@ public class QuickConsultListAction extends SearchBaseAction  {
 
     private String type;
 
-    private Map<String, Object> result;
+    private List<Map<String, Object>> result;
 
 
     public String getKeyword() {
@@ -28,11 +28,11 @@ public class QuickConsultListAction extends SearchBaseAction  {
         this.type = type;
     }
 
-    public Map<String, Object> getResult() {
+    public List<Map<String, Object>> getResult() {
         return result;
     }
 
-    public void setResult(Map<String, Object> result) {
+    public void setResult(List<Map<String, Object>> result) {
         this.result = result;
     }
 

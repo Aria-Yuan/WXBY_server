@@ -1078,9 +1078,9 @@ public class SearchBaseAction extends ActionSupport{
         return result;
     }
 
-    protected Map<String, Object> getQuickConsultList(String keyword, String type) {
+    protected List<Map<String, Object>> getQuickConsultList(String keyword, String type) {
 
-        Map<String, Object> resultList = new HashMap<>();
+//        Map<String, Object> resultList = new HashMap<>();
         List<Map<String, Object>> result = new ArrayList<>();
         MongoDBUtil mongoDb = new MongoDBUtil("wxby");
         MongoCollection<Document> collection = mongoDb.getCollection("quick_response");
@@ -1092,13 +1092,14 @@ public class SearchBaseAction extends ActionSupport{
             condition.add(new Document("content" , regular));
             condition.add(new Document("author_name" , regular));
             cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
-        }else if(type.equals("1")){//按id搜寻
+        }else if(type.equals("1")){//按作者id搜寻
             Pattern regular = Pattern.compile("(?i)" + keyword + ".*$", Pattern.MULTILINE);
             cursor = collection.find(new Document("author",regular)).limit(15).iterator();
         } else{
             cursor = collection.find().limit(10).iterator();
         }
-        while (cursor.hasNext()) {
+
+        while (cursor.hasNext()) {//转换格式
             int index = 0;
             Map<String, Object> map = new HashMap<>();
             Document data = cursor.next();
@@ -1114,14 +1115,11 @@ public class SearchBaseAction extends ActionSupport{
                 reply.put("reply_id", reply.get("_id").toString());
 
                 try{
-//                    List
-//                    if(!reply.get("replies").equals()) {
                         List<String> tp = new ArrayList<>();
                         for (ObjectId oros : reply.get("replies", new ArrayList<ObjectId>())) {
                             tp.add(oros.toString());
                         }
                         reply.put("replies", tp);
-//                    }
                 }
                 catch (Exception e){
                 }
@@ -1130,11 +1128,11 @@ public class SearchBaseAction extends ActionSupport{
             map.putAll(data);
             result.add(map);
         }
-        resultList.put("data", result);
+//        resultList.put("data", result);
         cursor.close();
         mongoDb.close();
-        System.out.println(resultList);
-        return resultList;
+//        System.out.println(resultList);
+        return result;
 
     }
 
