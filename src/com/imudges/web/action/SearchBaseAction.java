@@ -438,16 +438,21 @@ public class SearchBaseAction extends ActionSupport{
 
         }else if(searchType.equals("2")){//取得某用户的所有提问
             cursor = collection.find(new Document("questioner", new ObjectId(keyWord)))
-                    .projection(new Document("questioner",0))
+                    .projection(new Document("_id", 1)
+                            .append("lawyer",1)
+                            .append("create_time",1)
+                            .append("view_count", 1)
+                            .append("state",1)
+                            .append("content", new Document("$slice",1)))
                     .sort(new Document("state",1).append("time",-1)).limit(15).iterator();
         }else if(searchType.equals("3")){//取得某律师的所有回答
             cursor = collection.find(new Document("lawyer", new ObjectId(keyWord)))
                     .projection(new Document("_id", 1)
-                    .append("lawyer",1)
-                    .append("create_time",1)
-                    .append("view_count", 1)
-                    .append("state",1)
-                    .append("content", new Document("$slice",1)))
+                            .append("lawyer",1)
+                            .append("create_time",1)
+                            .append("view_count", 1)
+                            .append("state",1)
+                            .append("content", new Document("$slice",1)))
                     .sort(new Document("state",-1).append("view_count",-1)).limit(15).iterator();
         }else if(searchType.equals("5")){//取得某律师的所有回答(律师视角)
             MongoCursor<Document> lawyerCursor1 = collection_l.find(new Document("reg_id",new ObjectId(keyWord))).iterator();
