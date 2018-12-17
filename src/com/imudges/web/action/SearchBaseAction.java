@@ -7,21 +7,21 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.opensymphony.xwork2.ActionSupport;
 import jdk.nashorn.internal.scripts.JO;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
+import org.python.google.common.base.Utf8;
 
 
 import javax.print.Doc;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -370,6 +370,7 @@ public class SearchBaseAction extends ActionSupport{
         List<Map<String, Object>> result = new ArrayList<>();
         MongoDBUtil mongoDb = new MongoDBUtil("wxby");
         System.out.println(keyWord);
+        System.out.println(searchType);
         MongoCollection<Document> collection = mongoDb.getCollection("legal_counseling");
         MongoCollection<Document> collection_l = mongoDb.getCollection("lawyer");
         MongoCollection<Document> collection_q = mongoDb.getCollection("register");
@@ -406,6 +407,15 @@ public class SearchBaseAction extends ActionSupport{
                                 .append("state",1)
                                 .append("content", new Document("$slice",1)))
                         .sort(new Document("_id",-1)).limit(15).iterator();
+            }else if(searchType.charAt(1) == '2'){
+                cursor = collection.find()
+                        .projection(new Document("_id", 1)
+                                .append("lawyer",1)
+                                .append("create_time",1)
+                                .append("view_count", 1)
+                                .append("state",1)
+                                .append("content", new Document("$slice",1)))
+                        .sort(new Document("view_count",-1).append("_id",-1)).limit(15).iterator();
             }else{
                 cursor = collection.find()
                         .projection(new Document("_id", 1)
@@ -418,6 +428,7 @@ public class SearchBaseAction extends ActionSupport{
             }
         }else if(searchType.equals("1")){//新增
             Document counseling = Document.parse(keyWord);
+            JSONObject counselingj = JSONObject.fromObject(keyWord);
             counseling.append("questioner",new ObjectId(counseling.getString("questioner")));
             counseling.append("lawyer",new ObjectId(counseling.getString("lawyer")));
             //生成編號
@@ -425,6 +436,35 @@ public class SearchBaseAction extends ActionSupport{
             String text = ran.nextLong() + "";
             counseling.append("id", text);
 
+            //储存图片
+            JSONArray urllst = counselingj.getJSONArray("picture_lst");
+//            for(int i = 0 ; i < urllst.size(); i++){
+            for(int i = 0 ; i < 1; i++){
+                try {
+                    System.out.println(urllst.getString(i).replaceAll("\\s", ""));
+                    String picture =urllst.getString(i).replaceAll("\\s", "");
+                    // Base64解码图片
+                    byte[] imageByteArray = Base64.getDecoder().decode(picture.getBytes(StandardCharsets.UTF_8));
+//                    System.out.println(imageByteArray);
+
+//                    //存到本机
+                    String fileName = counseling.getString("questioner") + "/" + text + i;
+                    FileOutputStream imageOutFile = new FileOutputStream("D:/uploads/" + fileName+".jpg");
+                    imageOutFile.write(imageByteArray);
+//
+                    imageOutFile.close();
+//
+                    urllst.remove(i);
+                    urllst.add(fileName);
+                    System.out.println("Image Successfully Stored");
+                } catch (FileNotFoundException fnfe) {
+                    System.out.println("Image Path not found" + fnfe);
+                } catch (IOException ioe) {
+                    System.out.println("Exception while converting the Image " + ioe);
+                }
+            }
+
+            counseling.append("picture_lst", urllst);
             System.out.println(counseling);
             collection.insertOne(counseling);
             cursor = collection.find(new Document("id", text)).limit(1).iterator();
@@ -443,6 +483,7 @@ public class SearchBaseAction extends ActionSupport{
                             .append("create_time",1)
                             .append("view_count", 1)
                             .append("state",1)
+                            .append("picture_lst", 1)
                             .append("content", new Document("$slice",1)))
                     .sort(new Document("state",1).append("time",-1)).limit(15).iterator();
         }else if(searchType.equals("3")){//取得某律师的所有回答
@@ -452,6 +493,7 @@ public class SearchBaseAction extends ActionSupport{
                             .append("create_time",1)
                             .append("view_count", 1)
                             .append("state",1)
+                            .append("picture_lst", 1)
                             .append("content", new Document("$slice",1)))
                     .sort(new Document("state",-1).append("view_count",-1)).limit(15).iterator();
         }else if(searchType.equals("5")){//取得某律师的所有回答(律师视角)
