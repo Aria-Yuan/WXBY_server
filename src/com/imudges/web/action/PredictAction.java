@@ -9,6 +9,8 @@ public class PredictAction extends SearchBaseAction  {
 
     private String owner;
 
+    private String picturelst;
+
     private Map<String,Object> result;
 
 
@@ -22,9 +24,17 @@ public class PredictAction extends SearchBaseAction  {
 
     public String execute() throws Exception{
 
-        result = getCaseResult(id, content, owner);
+        result = getCaseResult(id, content, owner, picturelst);
         return SUCCESS;
 
+    }
+
+    public String getPicturelst() {
+        return picturelst;
+    }
+
+    public void setPicturelst(String picturelst) {
+        this.picturelst = picturelst;
     }
 
     public String getId() {
