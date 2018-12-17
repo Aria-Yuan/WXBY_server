@@ -151,13 +151,17 @@ public class BaseConsultAction extends ActionSupport {
 
                 int count = 0;
 //                System.out.println(reply.get("replies"));
-                if(!reply.get("replies").equals(new ArrayList<>())) {
+                try{
+//                    List
+//                    if(!reply.get("replies").equals()) {
                     List<String> tp = new ArrayList<>();
                     for (ObjectId oros : reply.get("replies", new ArrayList<ObjectId>())) {
                         tp.add(oros.toString());
-                        count++;
                     }
                     reply.put("replies", tp);
+//                    }
+                }
+                catch (Exception e){
                 }
 
             }

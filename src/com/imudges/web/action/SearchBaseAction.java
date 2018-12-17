@@ -1188,4 +1188,62 @@ public class SearchBaseAction extends ActionSupport{
         return result;
     }
 
+    protected List<Map<String, Object>> getQuickConsultList(String keyword, String type) {
+
+//        Map<String, Object> resultList = new HashMap<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        MongoCollection<Document> collection = mongoDb.getCollection("quick_response");
+        MongoCursor<Document> cursor;
+        if(type.equals("0")){//关键字搜寻
+            List<Document> condition = new ArrayList<>();
+            //设置正则表达
+            Pattern regular = Pattern.compile("(?i)" + keyword + ".*$", Pattern.MULTILINE);
+            condition.add(new Document("content" , regular));
+            condition.add(new Document("author_name" , regular));
+            cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
+        }else if(type.equals("1")){//按作者id搜寻
+            Pattern regular = Pattern.compile("(?i)" + keyword + ".*$", Pattern.MULTILINE);
+            cursor = collection.find(new Document("author",regular)).limit(15).iterator();
+        } else{
+            cursor = collection.find().limit(10).iterator();
+        }
+
+        while (cursor.hasNext()) {//转换格式
+            int index = 0;
+            Map<String, Object> map = new HashMap<>();
+            Document data = cursor.next();
+            Document trueData = data;
+            trueData.put("_id", data.get("_id").toString());
+            trueData.put("author", data.get("author").toString());
+//            System.out.println(data.get("lawyer_reply"));
+            for (Document reply: data.get("lawyer_reply", new ArrayList<Document>())){
+
+                reply.put("index", index);index++;
+                reply.put("author", reply.get("author").toString());
+                reply.put("parent", reply.get("parent").toString());
+                reply.put("reply_id", reply.get("_id").toString());
+
+                try{
+                        List<String> tp = new ArrayList<>();
+                        for (ObjectId oros : reply.get("replies", new ArrayList<ObjectId>())) {
+                            tp.add(oros.toString());
+                        }
+                        reply.put("replies", tp);
+                }
+                catch (Exception e){
+                }
+
+            }
+            map.putAll(data);
+            result.add(map);
+        }
+//        resultList.put("data", result);
+        cursor.close();
+        mongoDb.close();
+//        System.out.println(resultList);
+        return result;
+
+    }
+
 }
