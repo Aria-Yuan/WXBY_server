@@ -1093,8 +1093,7 @@ public class SearchBaseAction extends ActionSupport{
             condition.add(new Document("author_name" , regular));
             cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
         }else if(type.equals("1")){//按作者id搜寻
-            Pattern regular = Pattern.compile("(?i)" + keyword + ".*$", Pattern.MULTILINE);
-            cursor = collection.find(new Document("author",regular)).limit(15).iterator();
+            cursor = collection.find(new Document("author", new ObjectId(keyword))).limit(15).iterator();
         } else{
             cursor = collection.find().limit(10).iterator();
         }

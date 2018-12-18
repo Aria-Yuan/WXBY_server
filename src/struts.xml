@@ -92,6 +92,12 @@
             </result>
         </action>
 
+        <action name="getMyQuickConsultList" class="com.imudges.web.action.MyConsultQuickListAction">
+            <result name="success" type="json">
+                <param name="root">result</param>
+            </result>
+        </action>
+
         <action name="getQuickConsultResult" class="com.imudges.web.action.QuickConsultResultAction">
             <result name="success" type="json">
                 <param name="root">result</param>
