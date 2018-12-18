@@ -7,22 +7,21 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.opensymphony.xwork2.ActionSupport;
 import jdk.nashorn.internal.scripts.JO;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
-import sun.security.x509.OIDMap;
+import org.python.google.common.base.Utf8;
 
 
 import javax.print.Doc;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -65,7 +64,7 @@ public class SearchBaseAction extends ActionSupport{
         System.out.println(keyWord);
         MongoCollection<Document> collection = mongoDb.getCollection("judgement");
         MongoCursor<Document> cursor;
-        if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
+        if(searchType.equals("0") && !keyWord.equals("")){//关键字搜寻
             List<Document> condition = new ArrayList<>();
             JSONObject con_json = JSONObject.fromObject(keyWord);
 
@@ -182,9 +181,9 @@ public class SearchBaseAction extends ActionSupport{
             }
 
         }else if(searchType == "1"){//PK搜寻
-            Document old = collection.find(new Document("_id",keyWord)).first();
-            collection.updateOne(old,new Document("view_count",old.getInteger("view_copunt")+1));
-            cursor = collection.find(new Document("_id",keyWord))
+            Document old = collection.find(new Document("_id",new ObjectId(keyWord))).first();
+            collection.updateOne(old,new Document("$set", new Document("view_count",old.getInteger("view_copunt")+1)));
+            cursor = collection.find(new Document("_id",new ObjectId(keyWord)))
                     .projection(new Document("j_rank", 0)).limit(1).iterator();
         }
         else{
@@ -207,7 +206,7 @@ public class SearchBaseAction extends ActionSupport{
         MongoDBUtil mongoDb = new MongoDBUtil("wxby");
         MongoCollection<Document> collection = mongoDb.getCollection("lawyer");
         MongoCursor<Document> cursor;
-        if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
+        if(searchType.equals("0") && !keyWord.equals("")){//关键字搜寻
             List<Document> condition = new ArrayList<>();
             //设置正则表达
             Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
@@ -275,7 +274,7 @@ public class SearchBaseAction extends ActionSupport{
         MongoDBUtil mongoDb = new MongoDBUtil("wxby");
         MongoCollection<Document> collection = mongoDb.getCollection("law");
         MongoCursor<Document> cursor;
-        if(searchType.equals("0") && !keyWord.isEmpty()) {//关键字搜寻
+        if(searchType.equals("0") && !keyWord.equals("")) {//关键字搜寻
             JSONObject con_json = JSONObject.fromObject(keyWord);
             Document condition = new Document();
             //检索项目
@@ -371,11 +370,12 @@ public class SearchBaseAction extends ActionSupport{
         List<Map<String, Object>> result = new ArrayList<>();
         MongoDBUtil mongoDb = new MongoDBUtil("wxby");
         System.out.println(keyWord);
+        System.out.println(searchType);
         MongoCollection<Document> collection = mongoDb.getCollection("legal_counseling");
         MongoCollection<Document> collection_l = mongoDb.getCollection("lawyer");
         MongoCollection<Document> collection_q = mongoDb.getCollection("register");
         MongoCursor<Document> cursor;
-        if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
+        if(searchType.equals("0") && !keyWord.equals("")){//关键字搜寻
             List<Document> condition = new ArrayList<>();
             //设置正则表达
             Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
@@ -385,18 +385,50 @@ public class SearchBaseAction extends ActionSupport{
                     .append("lawyer",1)
                     .append("create_time",1)
                     .append("view_count", 1)
+                    .append("state",1)
                     .append("content", new Document("$slice",1)))
                     .sort(new Document("view_count",-1)).limit(15).iterator();
-        }else if(searchType.equals("0")){//推荐列表
-            cursor = collection.find()
-                    .projection(new Document("_id", 1)
-                            .append("lawyer",1)
-                            .append("create_time",1)
-                            .append("view_count", 1)
-                            .append("content", new Document("$slice",1)))
-                            .sort(new Document("view_count",-1)).limit(15).iterator();
+        }else if(searchType.charAt(0) == '0'){//推荐列表
+            if(searchType.charAt(1) == '0'){
+                cursor = collection.find()
+                        .projection(new Document("_id", 1)
+                                .append("lawyer",1)
+                                .append("create_time",1)
+                                .append("view_count", 1)
+                                .append("state",1)
+                                .append("content", new Document("$slice",1))).limit(15).iterator();
+//                        .sort(new Document("view_count",-1))
+            }else if(searchType.charAt(1) == '1'){
+                cursor = collection.find()
+                        .projection(new Document("_id", 1)
+                                .append("lawyer",1)
+                                .append("create_time",1)
+                                .append("view_count", 1)
+                                .append("state",1)
+                                .append("content", new Document("$slice",1)))
+                        .sort(new Document("_id",-1)).limit(15).iterator();
+            }else if(searchType.charAt(1) == '2'){
+                cursor = collection.find()
+                        .projection(new Document("_id", 1)
+                                .append("lawyer",1)
+                                .append("create_time",1)
+                                .append("view_count", 1)
+                                .append("state",1)
+                                .append("content", new Document("$slice",1)))
+                        .sort(new Document("view_count",-1).append("_id",-1)).limit(15).iterator();
+            }else{
+                cursor = collection.find()
+                        .projection(new Document("_id", 1)
+                                .append("lawyer",1)
+                                .append("create_time",1)
+                                .append("view_count", 1)
+                                .append("state",1)
+                                .append("content", new Document("$slice",1)))
+                        .sort(new Document("view_count",-1).append("_id",-1)).limit(15).iterator();
+            }
         }else if(searchType.equals("1")){//新增
             Document counseling = Document.parse(keyWord);
+            JSONObject counselingj = JSONObject.fromObject(keyWord);
             counseling.append("questioner",new ObjectId(counseling.getString("questioner")));
             counseling.append("lawyer",new ObjectId(counseling.getString("lawyer")));
             //生成編號
@@ -404,6 +436,35 @@ public class SearchBaseAction extends ActionSupport{
             String text = ran.nextLong() + "";
             counseling.append("id", text);
 
+            //储存图片
+            JSONArray urllst = counselingj.getJSONArray("picture_lst");
+//            for(int i = 0 ; i < urllst.size(); i++){
+            for(int i = 0 ; i < 1; i++){
+                try {
+                    System.out.println(urllst.getString(i).replaceAll("\\s", ""));
+                    String picture =urllst.getString(i).replaceAll("\\s", "");
+                    // Base64解码图片
+                    byte[] imageByteArray = Base64.getDecoder().decode(picture.getBytes(StandardCharsets.UTF_8));
+//                    System.out.println(imageByteArray);
+
+//                    //存到本机
+                    String fileName = counseling.getString("questioner") + "/" + text + i;
+                    FileOutputStream imageOutFile = new FileOutputStream("D:/uploads/" + fileName+".jpg");
+                    imageOutFile.write(imageByteArray);
+//
+                    imageOutFile.close();
+//
+                    urllst.remove(i);
+                    urllst.add(fileName);
+                    System.out.println("Image Successfully Stored");
+                } catch (FileNotFoundException fnfe) {
+                    System.out.println("Image Path not found" + fnfe);
+                } catch (IOException ioe) {
+                    System.out.println("Exception while converting the Image " + ioe);
+                }
+            }
+
+            counseling.append("picture_lst", urllst);
             System.out.println(counseling);
             collection.insertOne(counseling);
             cursor = collection.find(new Document("id", text)).limit(1).iterator();
@@ -417,16 +478,23 @@ public class SearchBaseAction extends ActionSupport{
 
         }else if(searchType.equals("2")){//取得某用户的所有提问
             cursor = collection.find(new Document("questioner", new ObjectId(keyWord)))
-                    .sort(new Document("state",1)).projection(new Document("questioner",0))
+                    .projection(new Document("_id", 1)
+                            .append("lawyer",1)
+                            .append("create_time",1)
+                            .append("view_count", 1)
+                            .append("state",1)
+                            .append("picture_lst", 1)
+                            .append("content", new Document("$slice",1)))
                     .sort(new Document("state",1).append("time",-1)).limit(15).iterator();
         }else if(searchType.equals("3")){//取得某律师的所有回答
             cursor = collection.find(new Document("lawyer", new ObjectId(keyWord)))
                     .projection(new Document("_id", 1)
-                    .append("lawyer",1)
-                    .append("create_time",1)
-                    .append("view_count", 1)
-                    .append("state",1)
-                    .append("content", new Document("$slice",1)))
+                            .append("lawyer",1)
+                            .append("create_time",1)
+                            .append("view_count", 1)
+                            .append("state",1)
+                            .append("picture_lst", 1)
+                            .append("content", new Document("$slice",1)))
                     .sort(new Document("state",-1).append("view_count",-1)).limit(15).iterator();
         }else if(searchType.equals("5")){//取得某律师的所有回答(律师视角)
             MongoCursor<Document> lawyerCursor1 = collection_l.find(new Document("reg_id",new ObjectId(keyWord))).iterator();
@@ -439,22 +507,23 @@ public class SearchBaseAction extends ActionSupport{
                             .append("content", new Document("$slice",1)))
                     .sort(new Document("state",1).append("time",-1)).limit(15).iterator();
         }else if(searchType.equals("4")){//以pk搜寻
-            cursor = collection.find(new Document("_id", new ObjectId(keyWord))).projection(new Document("questioner",0)).limit(1).iterator();
+//            Document old = collection.find(new Document("_id",new ObjectId(keyWord))).limit(1).iterator().next();
+//            collection.updateOne(old,new Document("$set",new Document("view_count",old.getInteger("view_count")+1)));
+            cursor = collection.find(new Document("_id", new ObjectId(keyWord)))
+                    .projection(new Document("questioner",0)).limit(1).iterator();
         }else{
-            cursor = collection.find().limit(15).iterator();
+            cursor = collection.find().projection(new Document("questioner",0)).limit(15).iterator();
         }
         while (cursor.hasNext()) {
             Map<String, Object> map = new HashMap<String, Object>();
             Document a = cursor.next();
             a.put("_id", a.getObjectId("_id").toString());
-            if(! searchType.equals("0")){
-                MongoCursor<Document> lawyerCursor = collection_l.find(new Document("_id",a.getObjectId("lawyer")))
-                        .projection(new Document("counseling_list",0)
-                        .append("reg_id",0)).iterator();
-                Document lawyer = lawyerCursor.next();
-                lawyer.put("_id",lawyer.getObjectId("_id").toString());
-                a.put("lawyer", lawyer);
-            }
+            MongoCursor<Document> lawyerCursor = collection_l.find(new Document("_id",a.getObjectId("lawyer")))
+                    .projection(new Document("counseling_list",0)
+                            .append("reg_id",0)).iterator();
+            Document lawyer = lawyerCursor.next();
+            lawyer.put("_id",lawyer.getObjectId("_id").toString());
+            a.put("lawyer", lawyer);
             map.putAll(a);
             result.add(map);
         }
@@ -645,6 +714,7 @@ public class SearchBaseAction extends ActionSupport{
 
 //                System.out.println(res.get("result").toString() + "**********************************");
                 result.put("result", res.get("result"));
+                result.put("content", res.getString("content"));
             }
 //            result.put("neighbor", res.get("neighborlst"));
 //        }
@@ -757,15 +827,54 @@ public class SearchBaseAction extends ActionSupport{
             Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
             condition.add(new Document("title" , regular));
             condition.add(new Document("article" , regular));
-            cursor = collection.find(new Document("$or",condition)).limit(15).iterator();
+            cursor = collection.find(new Document("$or",condition))
+                    .sort(new Document("_id",-1)).limit(15).iterator();
 //        }else if(searchType.equals("1")){//按日期搜寻
 //            Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
 //            cursor = collection.find(new Document("firm_addr",regular)).limit(15).iterator();
         }else if(searchType.equals("1")){//pk搜寻
-            cursor = collection.find(new Document("_id",new ObjectId(keyWord))).limit(1).iterator();
+            cursor = collection.find(new Document("_id",new ObjectId(keyWord)))
+                    .sort(new Document("_id",-1)).limit(1).iterator();
         }
         else{
-            cursor = collection.find().limit(10).iterator();
+            cursor = collection.find()
+                    .sort(new Document("_id",-1)).limit(10).iterator();
+        }
+        while (cursor.hasNext()) {
+            Map<String, Object> map = new HashMap<String, Object>();
+            Document a = cursor.next();
+            a.put("_id", a.getObjectId("_id").toString());
+            map.putAll(a);
+            result.add(map);
+        }
+        cursor.close();
+        mongoDb.close();
+        return result;
+    }
+
+    protected List<Map<String, Object>> getCommentsResult(String keyWord, String searchType){
+        List<Map<String, Object>> result = new ArrayList<>();
+        MongoDBUtil mongoDb = new MongoDBUtil("wxby");
+        MongoCollection<Document> collection = mongoDb.getCollection("comment");
+        MongoCursor<Document> cursor;
+        if(searchType.equals("0") && !keyWord.isEmpty()){//关键字搜寻
+            List<Document> condition = new ArrayList<>();
+            //设置正则表达
+            Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
+            condition.add(new Document("title" , regular));
+            condition.add(new Document("article" , regular));
+            cursor = collection.find(new Document("$or",condition))
+                    .sort(new Document("_id",-1)).limit(15).iterator();
+//        }else if(searchType.equals("1")){//按日期搜寻
+//            Pattern regular = Pattern.compile("(?i)" + keyWord + ".*$", Pattern.MULTILINE);
+//            cursor = collection.find(new Document("firm_addr",regular)).limit(15).iterator();
+        }else if(searchType.equals("1")){//pk搜寻
+            cursor = collection.find(new Document("_id",new ObjectId(keyWord)))
+                    .sort(new Document("_id",-1)).limit(1).iterator();
+        }
+        else{
+            cursor = collection.find()
+                    .sort(new Document("_id",-1)).limit(10).iterator();
         }
         while (cursor.hasNext()) {
             Map<String, Object> map = new HashMap<String, Object>();
@@ -805,6 +914,7 @@ public class SearchBaseAction extends ActionSupport{
         mongoDb.close();
         return result;
     }
+
     protected List<Map<String, Object>> getCommentKeyword(String keyWord,String searchType){
         List<Map<String, Object>> result = new ArrayList<>();
         MongoDBUtil mongoDb = new MongoDBUtil("wxby");
