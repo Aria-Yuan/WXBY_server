@@ -57,7 +57,7 @@ public class SearchBaseAction extends ActionSupport{
     /**
          * 返回搜寻的结果
          * */
-    protected List<Map<String, Object>> getJudgementResult(String keyWord, String searchType) throws UnsupportedEncodingException {
+    protected List<Map<String, Object>> getJudgementResult(String keyWord, String searchType) throws Exception {
 //            keyWord = new String(keyWord.getBytes("ISO-8859-1"),"UTF-8");
         List<Map<String, Object>> result = new ArrayList<>();
         MongoDBUtil mongoDb = new MongoDBUtil("wxby");
@@ -98,8 +98,8 @@ public class SearchBaseAction extends ActionSupport{
 
             try{
                 //裁判主文
-                Pattern regularC = Pattern.compile("(?i)主  文.*" + con_json.getString("content") + ".*理  由.*$", Pattern.MULTILINE);
-                condition.add(new Document("j_reason", regularC));
+                Pattern regularC = Pattern.compile(".*主\\s*文.*" + con_json.getString("content") + ".*理\\s*由.*", Pattern.DOTALL);
+                condition.add(new Document("j_content", regularC));
             }catch (Exception e){
                 System.out.println("is null object");
             }
@@ -492,7 +492,7 @@ public class SearchBaseAction extends ActionSupport{
                             .append("create_time",1)
                             .append("view_count", 1)
                             .append("state",1)
-                            .append("picture_lst", 1)
+//                            .append("picture_lst", 1)
                             .append("content", new Document("$slice",1)))
                     .sort(new Document("state",1).append("time",-1)).limit(15).iterator();
         }else if(searchType.equals("3")){//取得某律师的所有回答
@@ -529,7 +529,10 @@ public class SearchBaseAction extends ActionSupport{
             a.put("_id", a.getObjectId("_id").toString());
             MongoCursor<Document> lawyerCursor = collection_l.find(new Document("_id",a.getObjectId("lawyer")))
                     .projection(new Document("counseling_list",0)
-                            .append("reg_id",0)).iterator();
+                            .append("reg_id",0)
+                            .append("education",0)
+                            .append("experience",0)
+                            .append("description",0)).iterator();
             Document lawyer = lawyerCursor.next();
             lawyer.put("_id",lawyer.getObjectId("_id").toString());
             a.put("lawyer", lawyer);
