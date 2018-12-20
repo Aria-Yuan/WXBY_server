@@ -437,13 +437,13 @@ public class SearchBaseAction extends ActionSupport{
             counseling.append("id", text);
 
             //储存图片
-            JSONArray c = (JSONArray)counseling.get("content");
-            JSONArray urllst = c.getJSONObject(0).getJSONArray("picture_lst");
+            List<Document> c = (List<Document>)counseling.get("content");
+            List<String> urllst = (List<String>)c.get(0).get("picture_lst");
 //            for(int i = 0 ; i < urllst.size(); i++){
             for(int i = 0 ; i < urllst.size(); i++){
                 try {
-                    System.out.println(urllst.getString(i).replaceAll("\\s", ""));
-                    String picture =urllst.getString(i).replaceAll("\\s", "");
+                    System.out.println(urllst.get(i).replaceAll("\\s", ""));
+                    String picture =urllst.get(i).replaceAll("\\s", "");
                     // Base64解码图片
                     byte[] imageByteArray = Base64.getDecoder().decode(picture.getBytes(StandardCharsets.UTF_8));
 //                    System.out.println(imageByteArray);
@@ -473,7 +473,8 @@ public class SearchBaseAction extends ActionSupport{
                     System.out.println("Exception while converting the Image " + ioe);
                 }
             }
-            c.getJSONObject(0).put("picture_lst", urllst);
+            c.get(0).append("picture_lst", urllst);
+//            System.out.println(c.get(0).getString("create_time"));
             counseling.append("content", c);
             System.out.println(counseling);
             collection.insertOne(counseling);
