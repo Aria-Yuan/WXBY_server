@@ -437,7 +437,8 @@ public class SearchBaseAction extends ActionSupport{
             counseling.append("id", text);
 
             //储存图片
-            JSONArray urllst = counselingj.getJSONArray("picture_lst");
+            JSONArray c = (JSONArray)counseling.get("content");
+            JSONArray urllst = c.getJSONObject(0).getJSONArray("picture_lst");
 //            for(int i = 0 ; i < urllst.size(); i++){
             for(int i = 0 ; i < urllst.size(); i++){
                 try {
@@ -472,8 +473,8 @@ public class SearchBaseAction extends ActionSupport{
                     System.out.println("Exception while converting the Image " + ioe);
                 }
             }
-
-            counseling.append("picture_lst", urllst);
+            c.getJSONObject(0).put("picture_lst", urllst);
+            counseling.append("content", c);
             System.out.println(counseling);
             collection.insertOne(counseling);
             cursor = collection.find(new Document("id", text)).limit(1).iterator();
